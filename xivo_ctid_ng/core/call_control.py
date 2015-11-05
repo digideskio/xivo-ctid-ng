@@ -47,30 +47,47 @@ class CallControl(object):
 
     def on_channel_event(self, channel_obj, event):
         channel = channel_obj.get('channel')
-        args = event.get('args')
         print "channel:", channel
-        print "event:", event
+        if event:
+            args = event.get('args')
+            print "event:", event
         #self.queue_callcontrol.put(channel)
 
         if not args:
             return
 
-        channel.on_event('StasisStart', self.bridge_join(event, channel.id))
+        channel.on_event('StasisStart', self.bridge_join(event, channel))
 
-    def bridge_destroy(self, event):
-        print "on destroy:", event
-        if event.get('type') == 'StasisStart':
-            return
+    def bridge_destroy(self, bridge):
+        print "destroy bridge:", bridge.id
+        for channel in bridge.json.get('channels'):
+            try:
+                self.ari.channels.hangup(channelId=channel)
+            except:
+                pass
 
-        bridge = self.ari.bridges.destroy(bridgeId=event['args'][0])
+        try:
+            bridge.destroy()
+        except:
+            pass
+
+    def safe_hangup(self, channel):
+        print "hangup channel:", channel.id
+        try:
+            channel.hangup()
+        except:
+            pass
 
     def bridge_join(self, event, channel):
-        bridge = self.ari.bridges.get(bridgeId=event['args'][0])
-	channel_id = bridge.json.get('channels')[0]
-        self.ari.channels.ringStop(channelId=channel_id)
-        bridge.addChannel(channel=channel)
+        bridgeId = event.get('args')[0]
+        bridge = self.ari.bridges.get(bridgeId=bridgeId)
 
-        incoming = self.ari.channels.get(channelId=channel_id)
-        incoming.on_event('StasisEnd', self.bridge_destroy(event))
-        outgoing = self.ari.channels.get(channelId=channel)
-        outgoing.on_event('StasisEnd', self.bridge_destroy(event))
+	channelId = bridge.json.get('channels')[0]
+        incoming = self.ari.channels.get(channelId=channelId)
+        incoming.ringStop()
+
+        bridge.addChannel(channel=channel.id)
+
+        incoming.on_event('StasisEnd', lambda *args: self.safe_hangup(incoming))
+        channel.on_event('StasisEnd', lambda *args: self.safe_hangup(channel))
+        bridge.on_event('ChannelLeftBridge', lambda *args: self.bridge_destroy(bridge))

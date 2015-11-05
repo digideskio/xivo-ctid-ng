@@ -19,6 +19,16 @@
                 "description": "List calls",
                 "parameters": [
                     {
+                        "name": "application",
+                        "in": "query",
+                        "type": "string"
+                    },
+                    {
+                        "name": "application_instance",
+                        "in": "query",
+                        "type": "string"
+                    },
+                    {
                         "$ref": "#/parameters/token"
                     }
                 ],

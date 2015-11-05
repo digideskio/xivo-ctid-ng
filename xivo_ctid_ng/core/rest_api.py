@@ -125,6 +125,7 @@ def endpoint_from_user_uuid(uuid):
 
     return None
 
+
 def get_uuid_from_call_id(ari, call_id):
     try:
         user_id = ari.channels.getChannelVar(channelId=call_id, variable='XIVO_USERID')['value']
@@ -157,12 +158,28 @@ class Calls(AuthResource):
         token = request.headers['X-Auth-Token']
         current_app.config['confd']['token'] = token
 
+        application_filter = request.args.get('application')
+        application_instance_filter = request.args.get('application_instance')
+
         with new_ari_client(current_app.config['ari']['connection']) as ari:
-            channels = ari.channels.list()
-            calls = dict()
-            for channel in channels:
-                uuid = get_uuid_from_call_id(ari, channel.id)
-                calls[channel.id] = uuid
+            if application_filter:
+                try:
+                    channel_ids = ari.applications.get(applicationName=application_filter)['channel_ids']
+                except requests.HTTPError:
+                    channel_ids = []
+            else:
+                channel_ids = [channel.id for channel in ari.channels.list()]
+
+            calls = {}
+            for channel_id in channel_ids:
+                uuid = get_uuid_from_call_id(ari, channel_id)
+                try:
+                    app_arg = ari.channels.getChannelVar(channelId=channel_id, variable='XIVO_STASIS_ARG')['value']
+                except requests.HTTPError:
+                    app_arg = None
+                if application_instance_filter is None or app_arg == application_instance_filter:
+                    calls[channel_id] = {'uuid': uuid,
+                                         'application_arg': app_arg}
 
         return calls, 200
 
@@ -181,6 +198,7 @@ class Calls(AuthResource):
 
         return None
 
+
 class Call(AuthResource):
 
     def get(self, call_id):
@@ -192,7 +210,6 @@ class Call(AuthResource):
                 channel = ari.channels.get(channelId=call_id)
             except requests.RequestException:
                 raise NoSuchCall(call_id)
-
 
             bridges = [bridge.id for bridge in ari.bridges.list() if channel.id in bridge.json['channels']]
 
@@ -215,13 +232,12 @@ class Call(AuthResource):
     def delete(self, call_id):
         with new_ari_client(current_app.config['ari']['connection']) as ari:
             try:
-                channel = ari.channels.get(channelId=call_id)
+                ari.channels.hangup(channelId=call_id)
             except requests.RequestException:
                 raise NoSuchCall(call_id)
 
-        ari.channels.hangup(channelId=call_id)
-
         return None, 204
+
 
 class Answer(AuthResource):
 
@@ -237,8 +253,7 @@ class Answer(AuthResource):
             ari.channels.ring(channelId=call_id)
             bridge = ari.bridges.create(type='mixing')
             bridge.addChannel(channel=call_id)
-            params = ('dialed', bridge.id)
-            call = ari.channels.originate(endpoint=endpoint,
-                                          app='callcontrol',
-                                          appArgs=params)
-
+            params = ['dialed', bridge.id]
+            ari.channels.originate(endpoint=endpoint,
+                                   app='callcontrol',
+                                   appArgs=params)

@@ -66,6 +66,7 @@ class CoreRestApi(object):
     def run(self):
         api.add_resource(Calls, '/calls')
         api.add_resource(Call, '/calls/<call_id>')
+        api.add_resource(Answer, '/calls/<call_id>/answer')
         SwaggerResource.add_resource(api)
 
         self.api.init_app(self.app)
@@ -170,7 +171,7 @@ class Calls(AuthResource):
         current_app.config['confd']['token'] = token
 
         request_body = request.json
-        endpoint = endpoint_from_user_uuid(request_body['source']['user'], token)
+        endpoint = endpoint_from_user_uuid(request_body['source']['user'])
         with new_ari_client(current_app.config['ari']['connection']) as ari:
             call = ari.channels.originate(endpoint=endpoint,
                                           extension=request_body['destination']['extension'],
@@ -221,3 +222,23 @@ class Call(AuthResource):
         ari.channels.hangup(channelId=call_id)
 
         return None, 204
+
+class Answer(AuthResource):
+
+    def post(self, call_id):
+        token = request.headers['X-Auth-Token']
+        current_app.config['confd']['token'] = token
+
+        request_body = request.json
+        endpoint = endpoint_from_user_uuid(request_body['source']['user'])
+
+        with new_ari_client(current_app.config['ari']['connection']) as ari:
+            ari.channels.answer(channelId=call_id)
+            ari.channels.ring(channelId=call_id)
+            bridge = ari.bridges.create(type='mixing')
+            bridge.addChannel(channel=call_id)
+            params = ('dialed', bridge.id)
+            call = ari.channels.originate(endpoint=endpoint,
+                                          app='callcontrol',
+                                          appArgs=params)
+

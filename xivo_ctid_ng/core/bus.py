@@ -39,8 +39,8 @@ class CoreBus(ConsumerMixin):
 
     def on_ami_event(self, body, message):
         body = json.loads(body)['data']
-        if body['Event'] not in ('VarSet', 'Newexten'):
-            logger.debug(body['Event'])
-        if body['Event'] in ('OriginateResponse', 'Newchannel', 'NewConnectedLine', 'DialBegin'):
-            logger.debug(body)
+        #if body['Event'] not in ('VarSet', 'Newexten'):
+        #    logger.debug(body['Event'])
+        #if body['Event'] in ('OriginateResponse', 'Newchannel', 'NewConnectedLine', 'DialBegin'):
+        #    logger.debug(body)
         message.ack()

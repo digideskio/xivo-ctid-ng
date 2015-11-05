@@ -172,7 +172,7 @@
             }
         },
         "/calls/{call_id}/answer": {
-            "get": {
+            "post": {
                 "summary": "Answer a call",
                 "description": "Answer a call",
                 "parameters": [
@@ -182,6 +182,15 @@
                         "description": "ID of the call",
                         "required": true,
                         "type": "string"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "Call parameters",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CallAnswer"
+                        }
                     },
                     {
                         "$ref": "#/parameters/token"
@@ -299,6 +308,20 @@
                 },
                 "uuid": {
                     "type": "string"
+                }
+            }
+        },
+        "CallAnswer": {
+            "type": "object",
+            "properties": {
+                "source": {
+                    "description": "Caller parameters",
+                    "type": "object",
+                    "properties": {
+                        "user": {
+                            "type": "string"
+                        }
+                    }
                 }
             }
         },

@@ -24,14 +24,15 @@ class CoreCallControl(object):
 
     def __init__(self, config, queue):
         self.client = ari.connect(**config['connection'])
+        self.callcontrol = CallControl(self.client, queue)
 
     def run(self):
-        self.client.on_channel_event('StasisStart', on_start)
+        #self.client.on_channel_event('StasisStart', on_start)
         self.client.run(apps=['callcontrol'])
 
-def on_start(channel, event):
-    logger.info(channel)
-    logger.info(event)
+#def on_start(channel, event):
+#    logger.info(channel)
+#    logger.info(event)
 
 
 class CallControl(object):
@@ -44,6 +45,32 @@ class CallControl(object):
     def destroy(self):
         print "destroy..."
 
-    def on_channel_event(self, channel, event):
-        channel = channel['channel']
-        self.queue_callcontrol.put(channel)
+    def on_channel_event(self, channel_obj, event):
+        channel = channel_obj.get('channel')
+        args = event.get('args')
+        print "channel:", channel
+        print "event:", event
+        #self.queue_callcontrol.put(channel)
+
+        if not args:
+            return
+
+        channel.on_event('StasisStart', self.bridge_join(event, channel.id))
+
+    def bridge_destroy(self, event):
+        print "on destroy:", event
+        if event.get('type') == 'StasisStart':
+            return
+
+        bridge = self.ari.bridges.destroy(bridgeId=event['args'][0])
+
+    def bridge_join(self, event, channel):
+        bridge = self.ari.bridges.get(bridgeId=event['args'][0])
+	channel_id = bridge.json.get('channels')[0]
+        self.ari.channels.ringStop(channelId=channel_id)
+        bridge.addChannel(channel=channel)
+
+        incoming = self.ari.channels.get(channelId=channel_id)
+        incoming.on_event('StasisEnd', self.bridge_destroy(event))
+        outgoing = self.ari.channels.get(channelId=channel)
+        outgoing.on_event('StasisEnd', self.bridge_destroy(event))

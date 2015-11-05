@@ -18,8 +18,10 @@
 import logging
 
 from multiprocessing import Process
+from multiprocessing import Queue
 from xivo_ctid_ng.core.rest_api import CoreRestApi
 from xivo_ctid_ng.core.bus import CoreBus
+from xivo_ctid_ng.core.call_control import CoreCallControl
 
 logger = logging.getLogger(__name__)
 
@@ -27,14 +29,18 @@ logger = logging.getLogger(__name__)
 class Controller(object):
     def __init__(self, config):
         self.config = config
+        subscribeMsgQueue = Queue()
         self.rest_api = CoreRestApi(self.config['rest_api'])
         self.rest_api.app.config['ari'] = self.config['ari']
         self.rest_api.app.config['confd'] = self.config['confd']
         self.rest_api.app.config['auth'] = self.config['auth']
         self.bus = CoreBus(self.config['bus'])
+        self.callcontrol = CoreCallControl(self.config['ari'], subscribeMsgQueue)
 
     def run(self):
         logger.debug('xivo-ctid-ng running...')
         bus_process = Process(target=self.bus.run, name='bus_process')
         bus_process.start()
+        cc_process = Process(target=self.callcontrol.run, name='callcontrol_process')
+        cc_process.start()
         self.rest_api.run()

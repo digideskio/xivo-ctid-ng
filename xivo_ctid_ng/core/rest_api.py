@@ -16,6 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from datetime import timedelta
+from iso8601 import parse_date
+import calendar
 
 import ari
 import logging
@@ -138,6 +140,10 @@ def get_uuid_from_call_id(ari, call_id):
 
     return None
 
+def iso2unix(timestamp):
+    parsed = parse_date(timestamp)
+    timetuple = parsed.timetuple()
+    return calendar.timegm(timetuple)
 
 class NoSuchCall(APIException):
 
@@ -177,8 +183,11 @@ class Calls(AuthResource):
                     app_arg = ari.channels.getChannelVar(channelId=channel_id, variable='XIVO_STASIS_ARG')['value']
                 except requests.HTTPError:
                     app_arg = None
+                channel = ari.channels.get(channelId=channel_id)
                 if application_instance_filter is None or app_arg == application_instance_filter:
                     calls[channel_id] = {'uuid': uuid,
+                                         'status': channel.json.get('state'),
+                                         'creationtime': iso2unix(channel.json.get('creationtime')),
                                          'application_arg': app_arg}
 
         return calls, 200
@@ -211,20 +220,19 @@ class Call(AuthResource):
             except requests.RequestException:
                 raise NoSuchCall(call_id)
 
-            bridges = [bridge.id for bridge in ari.bridges.list() if channel.id in bridge.json['channels']]
+            bridges = [bridge.id for bridge in ari.bridges.list() if channel.id in bridge.json.get('channels')]
 
             talking_to = dict()
             for bridge_id in bridges:
-                calls = ari.bridges.get(bridgeId=bridge_id).json['channels']
+                calls = ari.bridges.get(bridgeId=bridge_id).json.get('channels')
                 for call in calls:
                     uuid = get_uuid_from_call_id(ari, call)
                     talking_to[call] = uuid
                 del talking_to[call_id]
 
-        status = channel.json['state']
-
         return {
-            'status': status,
+            'status': channel.json.get('state'),
+            'creationtime': iso2unix(channel.json.get('creationtime')),
             'talking_to': dict(talking_to),
             'bridges': bridges,
         }

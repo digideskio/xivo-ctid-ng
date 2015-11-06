@@ -10,3 +10,4 @@ kombu
 pyyaml==3.10
 requests==2.0.0  # cf. https://github.com/xivo-pbx/xivo-python-swaggerpy-packaging/commit/4b80cfa7e3d629242946ad27d6444158c0d28c3d
 ari
+iso8601

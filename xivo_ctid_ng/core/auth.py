@@ -52,8 +52,29 @@ def verify_token(func):
         abort(401)
     return wrapper
 
+def get_token(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            token = client().token.new('xivo_ws', expiration=5)
+        except requests.RequestException as e:
+            message = 'Could not connect to authentication server on {host}:{port}: {error}'.format(host=auth_host, port=auth_port, error=e)
+            logger.exception(message)
+            return {
+                'reason': [message],
+                'timestamp': [time()],
+                'status_code': 503,
+            }, 503
+
+        if token:
+            current_app.config['auth']['token'] = token['token']
+            return func(*args, **kwargs)
+        abort(401)
+    return wrapper
 
 def client():
     auth_host = current_app.config['auth']['host']
     auth_port = current_app.config['auth']['port']
-    return Client(auth_host, auth_port)
+    auth_username = current_app.config['auth']['username']
+    auth_password = current_app.config['auth']['password']
+    return Client(auth_host, port=auth_port, username=auth_username, password=auth_password)

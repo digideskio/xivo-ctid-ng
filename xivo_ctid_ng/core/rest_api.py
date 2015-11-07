@@ -102,14 +102,15 @@ class ErrorCatchingResource(Resource):
     method_decorators = [exceptions.handle_api_exception] + Resource.method_decorators
 
 
-class AuthResource(ErrorCatchingResource):
+class AuthCheckResource(ErrorCatchingResource):
     method_decorators = [auth.verify_token] + ErrorCatchingResource.method_decorators
 
+class AuthResource(AuthCheckResource):
+    method_decorators = [auth.get_token] + AuthCheckResource.method_decorators
 
 @contextmanager
 def new_confd_client(config):
     yield ConfdClient(**config)
-
 
 @contextmanager
 def new_ari_client(config):
@@ -117,6 +118,8 @@ def new_ari_client(config):
 
 
 def endpoint_from_user_uuid(uuid):
+    if current_app.config['auth']['token']:
+        current_app.config['confd']['token'] = current_app.config['auth']['token']
     with new_confd_client(current_app.config['confd']) as confd:
         user_id = confd.users.get(uuid)['id']
         line_id = confd.users.relations(user_id).list_lines()['items'][0]['line_id']
@@ -129,6 +132,8 @@ def endpoint_from_user_uuid(uuid):
 
 
 def get_uuid_from_call_id(ari, call_id):
+    if current_app.config['auth']['token']:
+        current_app.config['confd']['token'] = current_app.config['auth']['token']
     try:
         user_id = ari.channels.getChannelVar(channelId=call_id, variable='XIVO_USERID')['value']
     except:
@@ -161,9 +166,6 @@ class NoSuchCall(APIException):
 class Calls(AuthResource):
 
     def get(self):
-        token = request.headers['X-Auth-Token']
-        current_app.config['confd']['token'] = token
-
         application_filter = request.args.get('application')
         application_instance_filter = request.args.get('application_instance')
 
@@ -193,9 +195,6 @@ class Calls(AuthResource):
         return calls, 200
 
     def post(self):
-        token = request.headers['X-Auth-Token']
-        current_app.config['confd']['token'] = token
-
         request_body = request.json
         endpoint = endpoint_from_user_uuid(request_body['source']['user'])
         with new_ari_client(current_app.config['ari']['connection']) as ari:
@@ -211,9 +210,6 @@ class Calls(AuthResource):
 class Call(AuthResource):
 
     def get(self, call_id):
-        token = request.headers['X-Auth-Token']
-        current_app.config['confd']['token'] = token
-
         with new_ari_client(current_app.config['ari']['connection']) as ari:
             try:
                 channel = ari.channels.get(channelId=call_id)
@@ -250,9 +246,6 @@ class Call(AuthResource):
 class Answer(AuthResource):
 
     def post(self, call_id):
-        token = request.headers['X-Auth-Token']
-        current_app.config['confd']['token'] = token
-
         request_body = request.json
         endpoint = endpoint_from_user_uuid(request_body['source']['user'])
 

@@ -36,8 +36,8 @@ from xivo_ctid_ng.core import auth
 from xivo_ctid_ng.core import exceptions
 from xivo_ctid_ng.core.helpers import get_channel
 from xivo_ctid_ng.core.exceptions import APIException
-from geventwebsocket.handler import WebSocketHandler
-from gevent.pywsgi import WSGIServer
+from geventwebsocket.server import WebSocketServer
+from geventwebsocket import WebSocketError
 
 VERSION = 1.0
 
@@ -81,7 +81,7 @@ class CoreWebsocket(object):
             'ciphers': self.config.get('ciphers'),
         }
 
-        server = WSGIServer((bind_addr), self.app, handler_class=WebSocketHandler, **ssl)
+        server = WebSocketServer((bind_addr), self.app, **ssl)
 
         logger.debug('WSGIServer websocket starting... uid: %s, listen: %s:%s', os.getuid(), bind_addr[0], bind_addr[1])
         for route in http_helpers.list_routes(self.app):
@@ -119,17 +119,33 @@ class Websocket(AuthResource):
         call_control = current_app.config['queue']
         print "Websocket open..."
 
-        if request.environ.get('wsgi.websocket'):
-            ws = request.environ['wsgi.websocket']
+        ws = request.environ.get('wsgi.websocket')
+        if ws is None:
+            return ["WebSocket connection is expected here."]
 
+        message = {}
+
+        try:
             while True:
-                message = call_control.get()
-                channels = message['channel']['id']
-                event_type = message['type']
-                if event_type == 'StasisStart':
-                    with new_ari_client(current_app.config['ari']['connection']) as ari:
-                        calls = get_channel([channels], ari)
-                else:
-                    calls = {channels: { 'status': 'Down' }}
-                ws.send(json.dumps(calls))
-        return
+                ws.receive()
+                try:
+                    message = call_control.get(block=False)
+                except:
+                    message = {}
+                print ws.handler.server.clients.values()
+
+                if message:
+                    channels = message['channel']['id']
+                    event_type = message['type']
+                    if event_type == 'StasisStart':
+                        with new_ari_client(current_app.config['ari']['connection']) as ari:
+                            calls = get_channel([channels], ari)
+                    else:
+                        calls = {channels: { 'status': 'Down' }}
+
+                    if calls:
+                        ws.send(json.dumps(calls))
+
+            ws.close()
+        except WebSocketError, e:
+            print "{0}: {1}".format(e.__class__.__name__, e)

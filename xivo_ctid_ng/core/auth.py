@@ -32,6 +32,8 @@ def verify_token(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         token = request.headers.get('X-Auth-Token', '')
+        if not token:
+            token = request.args.get('token')
 
         try:
             token_is_valid = client().token.is_valid(token)
@@ -56,7 +58,7 @@ def get_token(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            token = client().token.new('xivo_ws', expiration=5)
+            token = client().token.new('xivo_ws', expiration=3600)
         except requests.RequestException as e:
             message = 'Could not connect to authentication server on {host}:{port}: {error}'.format(host=auth_host, port=auth_port, error=e)
             logger.exception(message)

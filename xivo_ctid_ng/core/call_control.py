@@ -35,13 +35,17 @@ class CallControl(object):
     def __init__(self, ari_client, queue):
         self.queue_callcontrol = queue
         self.ari = ari_client
-        self.ari.on_channel_event('StasisStart', self.on_channel_event)
+        self.ari.on_channel_event('StasisStart', self.on_channel_event_start)
+        self.ari.on_channel_event('StasisEnd', self.on_channel_event_end)
 
-    def destroy(self):
-        print "destroy..."
+    def on_channel_event_end(self, channel, event):
+        print "channel left:", channel.id
+        print event
+        self.queue_callcontrol.put(event)
 
-    def on_channel_event(self, channel_obj, event):
+    def on_channel_event_start(self, channel_obj, event):
         channel = channel_obj.get('channel')
+        self.queue_callcontrol.put(event)
         print "channel:", channel
         if event:
             args = event.get('args')

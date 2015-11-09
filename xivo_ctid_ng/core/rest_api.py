@@ -16,15 +16,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 from datetime import timedelta
-from iso8601 import parse_date
-import calendar
 
 import ari
 import logging
 import os
 import requests
 
-from cherrypy import wsgiserver
 from flask import current_app
 from flask import Flask
 from flask import request
@@ -34,11 +31,12 @@ from flask_cors import CORS
 from contextlib import contextmanager
 from werkzeug.contrib.fixers import ProxyFix
 from xivo import http_helpers
-from xivo_confd_client import Client as ConfdClient
 from xivo_ctid_ng.core import auth
 from xivo_ctid_ng.core import exceptions
+from xivo_ctid_ng.core.helpers import list_channels, endpoint_from_user_uuid, get_uuid_from_call_id
 from xivo_ctid_ng.core.exceptions import APIException
 from xivo_ctid_ng.resources.api.actions import SwaggerResource
+from gevent.pywsgi import WSGIServer
 
 VERSION = 1.0
 
@@ -77,18 +75,20 @@ class CoreRestApi(object):
 
         _check_file_readable(self.config['certificate'])
         _check_file_readable(self.config['private_key'])
-        wsgi_app = wsgiserver.WSGIPathInfoDispatcher({'/': self.app})
-        server = wsgiserver.CherryPyWSGIServer(bind_addr=bind_addr,
-                                               wsgi_app=wsgi_app)
-        server.ssl_adapter = http_helpers.ssl_adapter(self.config['certificate'],
-                                                      self.config['private_key'],
-                                                      self.config.get('ciphers'))
+        ssl = {
+            'certfile': self.config['certificate'],
+            'keyfile': self.config['private_key'],
+            'ciphers': self.config.get('ciphers'),
+        }
+
+        server = WSGIServer((bind_addr), self.app, **ssl)
+
         logger.debug('WSGIServer starting... uid: %s, listen: %s:%s', os.getuid(), bind_addr[0], bind_addr[1])
         for route in http_helpers.list_routes(self.app):
             logger.debug(route)
 
         try:
-            server.start()
+            server.serve_forever()
         except KeyboardInterrupt:
             server.stop()
 
@@ -108,47 +108,11 @@ class AuthCheckResource(ErrorCatchingResource):
 class AuthResource(AuthCheckResource):
     method_decorators = [auth.get_token] + AuthCheckResource.method_decorators
 
-@contextmanager
-def new_confd_client(config):
-    yield ConfdClient(**config)
 
 @contextmanager
 def new_ari_client(config):
     yield ari.connect(**config)
 
-
-def endpoint_from_user_uuid(uuid):
-    if current_app.config['auth']['token']:
-        current_app.config['confd']['token'] = current_app.config['auth']['token']
-    with new_confd_client(current_app.config['confd']) as confd:
-        user_id = confd.users.get(uuid)['id']
-        line_id = confd.users.relations(user_id).list_lines()['items'][0]['line_id']
-        line = confd.lines.get(line_id)
-        endpoint = "{}/{}".format(line['protocol'], line['name'])
-    if endpoint:
-        return endpoint
-
-    return None
-
-
-def get_uuid_from_call_id(ari, call_id):
-    if current_app.config['auth']['token']:
-        current_app.config['confd']['token'] = current_app.config['auth']['token']
-    try:
-        user_id = ari.channels.getChannelVar(channelId=call_id, variable='XIVO_USERID')['value']
-    except:
-        return None
-
-    with new_confd_client(current_app.config['confd']) as confd:
-        uuid = confd.users.get(user_id)['uuid']
-        return uuid
-
-    return None
-
-def iso2unix(timestamp):
-    parsed = parse_date(timestamp)
-    timetuple = parsed.timetuple()
-    return calendar.timegm(timetuple)
 
 class NoSuchCall(APIException):
 
@@ -166,31 +130,7 @@ class NoSuchCall(APIException):
 class Calls(AuthResource):
 
     def get(self):
-        application_filter = request.args.get('application')
-        application_instance_filter = request.args.get('application_instance')
-
-        with new_ari_client(current_app.config['ari']['connection']) as ari:
-            if application_filter:
-                try:
-                    channel_ids = ari.applications.get(applicationName=application_filter)['channel_ids']
-                except requests.HTTPError:
-                    channel_ids = []
-            else:
-                channel_ids = [channel.id for channel in ari.channels.list()]
-
-            calls = {}
-            for channel_id in channel_ids:
-                uuid = get_uuid_from_call_id(ari, channel_id)
-                try:
-                    app_arg = ari.channels.getChannelVar(channelId=channel_id, variable='XIVO_STASIS_ARG')['value']
-                except requests.HTTPError:
-                    app_arg = None
-                channel = ari.channels.get(channelId=channel_id)
-                if application_instance_filter is None or app_arg == application_instance_filter:
-                    calls[channel_id] = {'uuid': uuid,
-                                         'status': channel.json.get('state'),
-                                         'creationtime': iso2unix(channel.json.get('creationtime')),
-                                         'application_arg': app_arg}
+        calls = list_channels(request.args)
 
         return calls, 200
 

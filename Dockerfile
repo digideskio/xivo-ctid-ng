@@ -28,6 +28,6 @@ RUN chown www-data /var/run/xivo-ctid-ng/
 
 RUN rm -fr /usr/src/xivo-ctid-ng
 
-EXPOSE 9500
+EXPOSE 9500 9501
 
 CMD xivo-ctid-ng -f -d

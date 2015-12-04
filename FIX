@@ -1,2 +1,0 @@
-Number of websocket open is only one
-Fix session on decorator for xivo auth (need to remove token at the end)

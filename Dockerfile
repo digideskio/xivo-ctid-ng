@@ -29,6 +29,6 @@ RUN apt-get clean
 RUN rm -fr /usr/src/xivo-ctid-ng
 RUN rm -fr /var/lib/apt/lists/*
 
-EXPOSE 9500 9501
+EXPOSE 9500
 
 CMD xivo-ctid-ng -f -d

@@ -309,17 +309,6 @@
                 }
             }
         },
-        "Calls": {
-            "type": "object",
-            "properties": {
-                "call_id": {
-                    "type": "string"
-                },
-                "uuid": {
-                    "type": "string"
-                }
-            }
-        },
         "CallAnswer": {
             "type": "object",
             "properties": {

@@ -78,7 +78,7 @@ class CoreRestApi(object):
             logger.debug(route)
 
         try:
-            server.serve_forever()
+            server.start()
         except KeyboardInterrupt:
             server.stop()
 
@@ -92,5 +92,5 @@ class ErrorCatchingResource(Resource):
     method_decorators = [exceptions.handle_api_exception] + Resource.method_decorators
 
 
-class AuthCheckResource(ErrorCatchingResource):
+class AuthResource(ErrorCatchingResource):
     method_decorators = [auth.verify_token] + ErrorCatchingResource.method_decorators

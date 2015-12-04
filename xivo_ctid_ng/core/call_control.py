@@ -43,11 +43,11 @@ class CallControl(object):
 
     def on_channel_event_end(self, channel, event):
         print "channel left:", channel.id
-        self.queue_callcontrol.put(event)
+        self.queue_callcontrol.put(_convert_event(event))
 
     def on_channel_event_start(self, channel_obj, event):
         channel = channel_obj.get('channel')
-        self.queue_callcontrol.put(event)
+        self.queue_callcontrol.put(_convert_event(event))
         if event:
             args = event.get('args')
 
@@ -87,3 +87,33 @@ class CallControl(object):
         bridge.addChannel(channel=channel.id)
 
         bridge.on_event('ChannelLeftBridge', lambda *args: self.bridge_destroy(bridge.id))
+
+def _convert_event(event):
+    result = Call(event['channel']['id'], event['channel']['creationtime'])
+    result.creation_time = event['channel']['creationtime']
+    result.bridges = []
+    result.status = event['channel']['state']
+    result.talking_to = []
+    result.user_uuid = None
+
+    return result.to_dict()
+
+class Call(object):
+
+    def __init__(self, id_, creation_time):
+        self.id_ = id_
+        self.creation_time = creation_time
+        self.bridges = []
+        self.status = 'Down'
+        self.talking_to = []
+        self.user_uuid = None
+
+    def to_dict(self):
+        return {
+            'bridges': self.bridges,
+            'call_id': self.id_,
+            'creation_time': self.creation_time,
+            'status': self.status,
+            'talking_to': self.talking_to,
+            'user_uuid': self.user_uuid,
+        }

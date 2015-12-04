@@ -24,6 +24,7 @@ from functools import wraps
 from time import time
 
 from xivo_auth_client import Client
+from xivo_auth_client.client import AuthClient
 
 logger = logging.getLogger(__name__)
 
@@ -54,29 +55,18 @@ def verify_token(func):
         abort(401)
     return wrapper
 
-def get_token(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            token = client().token.new('xivo_ws', expiration=3600)
-        except requests.RequestException as e:
-            message = 'Could not connect to authentication server on {host}:{port}: {error}'.format(host=auth_host, port=auth_port, error=e)
-            logger.exception(message)
-            return {
-                'reason': [message],
-                'timestamp': [time()],
-                'status_code': 503,
-            }, 503
-
-        if token:
-            current_app.config['auth']['token'] = token['token']
-            return func(*args, **kwargs)
-        abort(401)
-    return wrapper
+def client_service(config):
+    auth_config = config['auth']
+    return AuthClient(auth_config['host'],
+                      port=auth_config['port'],
+                      username=auth_config['username'],
+                      password=auth_config['password'],
+                      verify_certificate=auth_config['verify_certificate'])
 
 def client():
     auth_host = current_app.config['auth']['host']
     auth_port = current_app.config['auth']['port']
-    auth_username = current_app.config['auth']['username']
-    auth_password = current_app.config['auth']['password']
-    return Client(auth_host, port=auth_port, username=auth_username, password=auth_password)
+    verify_certificate = current_app.config['auth']['verify_certificate']
+    return Client(auth_host,
+                  port=auth_port,
+                  verify_certificate=verify_certificate)

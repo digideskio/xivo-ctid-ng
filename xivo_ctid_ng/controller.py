@@ -45,6 +45,8 @@ class Controller(object):
         callcontrol_thread.start()
         try:
             self.rest_api.run()
+        except Exception as e:
+            print e
         finally:
             logger.info('xivo-ctid-ng stopping...')
             self.bus.stop()

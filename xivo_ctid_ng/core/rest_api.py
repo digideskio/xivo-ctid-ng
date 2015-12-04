@@ -26,6 +26,7 @@ from flask_restful import Api
 from flask_restful import Resource
 from flask_cors import CORS
 from xivo import http_helpers
+from xivo.auth_helpers import TokenRenewer
 from xivo_ctid_ng.core import auth
 from xivo_ctid_ng.core import exceptions
 from xivo_ctid_ng.core import plugin_manager
@@ -65,6 +66,8 @@ class CoreRestApi(object):
     def run(self):
         bind_addr = (self.config['listen'], self.config['port'])
 
+        token_renewer = _token_renewer(app)
+
         _check_file_readable(self.config['certificate'])
         _check_file_readable(self.config['private_key'])
         wsgi_app = wsgiserver.WSGIPathInfoDispatcher({'/': app})
@@ -78,7 +81,8 @@ class CoreRestApi(object):
             logger.debug(route)
 
         try:
-            server.start()
+            with token_renewer:
+                server.start()
         except KeyboardInterrupt:
             server.stop()
 
@@ -86,6 +90,15 @@ class CoreRestApi(object):
 def _check_file_readable(file_path):
     with open(file_path, 'r'):
         pass
+
+
+def _token_renewer(self):
+    token_renewer = TokenRenewer(auth.client_service(app.config))
+    def on_token_change(token_id):
+        app.config['service_token'] = token_id
+    token_renewer.subscribe_to_token_change(on_token_change)
+
+    return token_renewer
 
 
 class ErrorCatchingResource(Resource):

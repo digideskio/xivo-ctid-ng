@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 @contextmanager
 def new_confd_client(config):
+    current_app.config['confd']['token'] = current_app.config['service_token']
     yield ConfdClient(**config)
 
 

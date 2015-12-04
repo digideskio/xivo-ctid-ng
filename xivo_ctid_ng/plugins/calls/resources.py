@@ -132,12 +132,21 @@ class CallsResource(AuthResource):
         token = request.headers['X-Auth-Token']
         current_app.config['confd']['token'] = token
 
+        application_filter = request.args.get('application')
+        application_instance_filter = request.args.get('application_instance')
+
         calls = []
         with new_ari_client(current_app.config['ari']['connection']) as ari:
-            try:
-                channels = ari.channels.list()
-            except requests.RequestException as e:
-                raise AsteriskARIUnreachable(current_app.config['ari']['connection'], e)
+            if application_filter:
+                try:
+                    channels = ari.applications.get(applicationName=application_filter)['channel_ids']
+                except requests.RequestException as e:
+                    raise AsteriskARIUnreachable(current_app.config['ari']['connection'], e)
+            else:
+                try:
+                    channels = ari.channels.list()
+                except requests.RequestException as e:
+                    raise AsteriskARIUnreachable(current_app.config['ari']['connection'], e)
 
             for channel in channels:
                 result_call = Call(channel.id, channel.json['creationtime'])

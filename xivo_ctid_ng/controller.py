@@ -29,13 +29,13 @@ logger = logging.getLogger(__name__)
 
 class Controller(object):
     def __init__(self, config):
-        subscribeMsgQueue = Queue()
+        MsgQueue = Queue()
         app.config['ari'] = config['ari']
         app.config['confd'] = config['confd']
         app.config['auth'] = config['auth']
         self.rest_api = CoreRestApi(config)
-        self.bus = CoreBus(config['bus'])
-        self.callcontrol = CoreCallControl(config['ari'], subscribeMsgQueue)
+        self.bus = CoreBus(config['bus'], MsgQueue)
+        self.callcontrol = CoreCallControl(config['ari'], MsgQueue)
 
     def run(self):
         logger.info('xivo-ctid-ng starting...')
@@ -47,7 +47,7 @@ class Controller(object):
             self.rest_api.run()
         finally:
             logger.info('xivo-ctid-ng stopping...')
+            self.bus.stop()
             self.callcontrol.stop()
-            self.bus.should_stop = True
             bus_thread.join()
             callcontrol_thread.join()

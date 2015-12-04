@@ -17,30 +17,57 @@
 import json
 import logging
 
-from kombu.mixins import ConsumerMixin
 from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
+from kombu.pools import producers
 
 logger = logging.getLogger(__name__)
 
 
-class CoreBus(ConsumerMixin):
+class CoreBus(object):
 
-    def __init__(self, config):
+    def __init__(self, config, queue):
+        super(CoreBus, self).__init__()
         self.config = config
-        bus_url = 'amqp://{username}:{password}@{host}:{port}//'.format(**config)
-        self.connection = Connection(bus_url)
-        self.exchange = Exchange(config['exchange_name'], type=config['exchange_type'])
-        self.ami_queue = Queue(exchange=self.exchange, routing_key='ami.*', exclusive=True)
+        self.queue = queue
+        self.publish = None
 
-    def get_consumers(self, Consumer, channel):
-        return [Consumer(queues=self.ami_queue, callbacks=[self.on_ami_event])]
+    def run(self):
+        logger.info("Running AMQP interfaces publisher")
+        self._publish()
 
-    def on_ami_event(self, body, message):
-        body = json.loads(body)['data']
-        #if body['Event'] not in ('VarSet', 'Newexten'):
-        #    logger.debug(body['Event'])
-        #if body['Event'] in ('OriginateResponse', 'Newchannel', 'NewConnectedLine', 'DialBegin'):
-        #    logger.debug(body)
-        message.ack()
+    def stop(self):
+        if self.publish:
+           self.publish.should_stop = True
+
+    def _publish(self):
+        uri = 'amqp://{username}:{password}@{host}:{port}//'.format(**self.config)
+        with producers[Connection(uri)].acquire(block=True) as conn:
+            self.publish = Publisher(conn, self.queue)
+            self.publish.init_app(self.config)
+            self.publish.run()
+
+class Publisher(object):
+    def __init__(self, connection, queue):
+        self.conn = connection
+        self.queue = queue
+        self.exchange = None
+        self.routing_key = None
+        self.type = None
+        self.should_stop = False
+
+    def init_app(self, config):
+        self.exchange = config['exchange_name']
+        self.type = config['exchange_type']
+        self.routing_key = 'calls'
+
+    def run(self):
+        while not self.should_stop:
+            message = self.queue.get(0.1)
+            if message:
+                print "Send message : ", message
+                self.publish(message)
+
+    def publish(self, data):
+        self.conn.publish(data, exchange=self.exchange, routing_key=self.routing_key)

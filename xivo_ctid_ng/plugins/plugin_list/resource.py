@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+
 # Copyright (C) 2015 Avencall
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,24 +15,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-from flask import make_response
-from flask.ext.restful import Resource
-from pkg_resources import resource_string
+from flask import jsonify
+from xivo_ctid_ng.core.rest_api import AuthResource
 
 
-class SwaggerResource(Resource):
+class PluginList(AuthResource):
 
-    api_package = "xivo_ctid_ng.resources.api"
-    api_filename = "api.json"
-    api_path = "/api/api.json"
-
-    @classmethod
-    def add_resource(cls, api):
-        api.add_resource(cls, cls.api_path)
+    def __init__(self, enabled_plugins):
+        self._enabled_plugins = enabled_plugins
 
     def get(self):
-        try:
-            api_spec = resource_string(self.api_package, self.api_filename)
-        except IOError:
-            return {'error': "API spec does not exist"}, 404
-        return make_response(api_spec, 200, {'Content-Type': 'application/json'})
+        plugins = self._enabled_plugins
+        return jsonify({'items': plugins})

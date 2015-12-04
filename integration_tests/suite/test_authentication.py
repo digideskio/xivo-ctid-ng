@@ -25,7 +25,7 @@ from hamcrest import equal_to
 
 class TestAuthentication(IntegrationTest):
 
-    asset = 'basic-rest'
+    asset = 'basic_rest'
 
     def test_no_auth_gives_401(self):
         result = self.get_call_result('my-call', token=None)
@@ -56,7 +56,12 @@ class TestAuthenticationError(IntegrationTest):
 
 class TestAuthenticationCoverage(IntegrationTest):
 
-    asset = 'basic-rest'
+    asset = 'basic_rest'
+
+    def test_auth_on_list_calls(self):
+        result = self.get_calls_result()
+
+        assert_that(result.status_code, equal_to(401))
 
     def test_auth_on_new_call(self):
         result = self.get_call_result('my-call')
@@ -64,11 +69,16 @@ class TestAuthenticationCoverage(IntegrationTest):
         assert_that(result.status_code, equal_to(401))
 
     def test_auth_on_get_call(self):
-        result = self.post_calls_result()
+        result = self.post_call_result(source=None, priority=None, extension=None, context=None)
 
         assert_that(result.status_code, equal_to(401))
 
     def test_auth_on_hangup(self):
         result = self.delete_call_result('my-call')
+
+        assert_that(result.status_code, equal_to(401))
+
+    def test_auth_on_list_plugins(self):
+        result = self.get_plugins_result()
 
         assert_that(result.status_code, equal_to(401))

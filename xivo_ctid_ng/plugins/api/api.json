@@ -37,20 +37,16 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "List call ID with user uuid",
+                        "description": "List currently active calls",
                         "schema": {
                             "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Calls"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No such call",
-                        "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Error"
+                            "properties": {
+                                "items": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/definitions/Call"
+                                    }
+                                }
                             }
                         }
                     },
@@ -83,10 +79,13 @@
                     "201": {
                         "description": "The new call ID",
                         "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/CallID"
-                            }
+                            "$ref": "#/definitions/CallID"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/Error"
                         }
                     },
                     "503": {
@@ -115,22 +114,15 @@
                     "calls"
                 ],
                 "responses": {
-                    "201": {
-                        "description": "The new call ID",
+                    "200": {
                         "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Call"
-                            }
+                            "$ref": "#/definitions/Call"
                         }
                     },
                     "404": {
                         "description": "No such call",
                         "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Error"
-                            }
+                            "$ref": "#/definitions/Error"
                         }
                     },
                     "503": {
@@ -158,21 +150,12 @@
                 ],
                 "responses": {
                     "204": {
-                        "description": "Call is hangup",
-                        "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Call"
-                            }
-                        }
+                        "description": "Call has been hung up"
                     },
                     "404": {
                         "description": "No such call",
                         "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Error"
-                            }
+                            "$ref": "#/definitions/Error"
                         }
                     },
                     "503": {
@@ -237,7 +220,7 @@
     },
     "responses": {
         "AnotherServiceUnavailable": {
-            "description": "Another service is unavailable (e.g. xivo-auth, Asterisk, ...)",
+            "description": "Another service is unavailable (e.g. xivo-auth, xivo-confd, Asterisk, ...)",
             "schema": {
                 "$ref": "#/definitions/Error"
             }
@@ -279,19 +262,31 @@
                             "type": "string"
                         }
                     }
+                },
+                "variables": {
+                    "description": "Channel variables to set",
+                    "type": "object"
                 }
             }
         },
         "Call": {
             "type": "object",
             "properties": {
+                "call_id": {
+                    "type": "string"
+                },
+                "user_uuid": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string"
                 },
                 "talking_to": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
+                    "type": "object",
+                    "properties": {
+                        "<channel_id>": {
+                            "type": "string"
+                        }
                     }
                 },
                 "bridges": {
@@ -299,6 +294,10 @@
                     "items": {
                         "type": "string"
                     }
+                },
+                "creation_time": {
+                    "type": "string",
+                    "format": "date-time"
                 }
             }
         },

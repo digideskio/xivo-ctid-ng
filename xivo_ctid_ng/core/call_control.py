@@ -43,7 +43,6 @@ class CallControl(object):
 
     def on_channel_event_end(self, channel, event):
         print "channel left:", channel.id
-        print event
         self.queue_callcontrol.put(event)
 
     def on_channel_event_start(self, channel_obj, event):
@@ -51,7 +50,6 @@ class CallControl(object):
         self.queue_callcontrol.put(event)
         if event:
             args = event.get('args')
-            print "event:", event
 
         if not args:
             return

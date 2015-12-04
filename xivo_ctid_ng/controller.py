@@ -22,7 +22,6 @@ from Queue import Queue
 from xivo_ctid_ng.core.rest_api import app
 from xivo_ctid_ng.core.rest_api import CoreRestApi
 from xivo_ctid_ng.core.bus import CoreBus
-from xivo_ctid_ng.core.websocket import CoreWebsocket
 from xivo_ctid_ng.core.call_control import CoreCallControl
 
 logger = logging.getLogger(__name__)

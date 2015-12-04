@@ -29,6 +29,9 @@ class CoreCallControl(object):
     def run(self):
         self.client.run(apps=['callcontrol'])
 
+    def stop(self):
+        self.client.close()
+
 
 class CallControl(object):
 

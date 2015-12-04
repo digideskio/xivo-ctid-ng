@@ -47,7 +47,7 @@ class Controller(object):
             self.rest_api.run()
         finally:
             logger.info('xivo-ctid-ng stopping...')
+            self.callcontrol.stop()
             self.bus.should_stop = True
-            self.callcontrol.should_stop = True
             bus_thread.join()
             callcontrol_thread.join()

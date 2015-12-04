@@ -49,7 +49,6 @@ class CallControl(object):
     def on_channel_event_start(self, channel_obj, event):
         channel = channel_obj.get('channel')
         self.queue_callcontrol.put(event)
-        print "channel:", channel
         if event:
             args = event.get('args')
             print "event:", event

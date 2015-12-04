@@ -21,6 +21,8 @@ from kombu import Connection
 from kombu import Exchange
 from kombu import Queue
 from kombu.pools import producers
+from Queue import Empty
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -64,10 +66,11 @@ class Publisher(object):
 
     def run(self):
         while not self.should_stop:
-            message = self.queue.get(0.1)
-            if message:
-                print "Send message : ", message
-                self.publish(message)
+            try:
+                message = self.queue.get(timeout=0.1)
+                self.publish(json.dumps(message))
+            except Empty:
+                pass
 
     def publish(self, data):
         self.conn.publish(data, exchange=self.exchange, routing_key=self.routing_key)

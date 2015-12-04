@@ -48,6 +48,9 @@ class Controller(object):
         finally:
             logger.info('xivo-ctid-ng stopping...')
             self.bus.stop()
-            self.callcontrol.stop()
+            try:
+                self.callcontrol.stop()
+            except:
+                pass
             bus_thread.join()
             callcontrol_thread.join()

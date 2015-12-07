@@ -40,6 +40,7 @@ class CallControl(object):
         self.ari = ari_client
         self.ari.on_channel_event('StasisStart', self.on_channel_event_start)
         self.ari.on_channel_event('StasisEnd', self.on_channel_event_end)
+        self.ari.on_channel_event('ChannelStateChange', self.on_channel_event_state_change)
 
     def on_channel_event_end(self, channel, event):
         print "channel left:", channel.id
@@ -57,6 +58,9 @@ class CallControl(object):
         if args[0] == 'dialed':
             bridge_id = args[1]
             self.bridge_join(bridge_id, channel)
+
+    def on_channel_event_state_change(self, channel, event):
+        self.queue_callcontrol.put(_convert_event(event))
 
     def bridge_destroy(self, bridge_id):
         print "destroy bridge:", bridge_id

@@ -67,3 +67,4 @@ ari:
 enabled_plugins:
   - api
   - calls
+  - waiting_room

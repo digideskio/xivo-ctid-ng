@@ -38,6 +38,7 @@ setup(
             'api = xivo_ctid_ng.plugins.api.plugin:Plugin',
             'calls = xivo_ctid_ng.plugins.calls.plugin:Plugin',
             'plugin_list = xivo_ctid_ng.plugins.plugin_list.plugin:Plugin',
+            'waiting_room = xivo_ctid_ng.plugins.waiting_room.plugin:Plugin',
         ]
     }
 )

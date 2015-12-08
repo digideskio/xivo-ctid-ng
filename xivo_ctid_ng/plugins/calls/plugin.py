@@ -16,7 +16,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from .resources import CallResource, CallsResource, AnswerResource
+from .resources import CallResource, CallsResource, AnswerResource, BlindTransferResource
 
 
 class Plugin(object):
@@ -26,3 +26,4 @@ class Plugin(object):
         api.add_resource(CallsResource, '/calls')
         api.add_resource(CallResource, '/calls/<call_id>')
         api.add_resource(AnswerResource, '/calls/<call_id>/answer')
+        api.add_resource(BlindTransferResource, '/calls/<call_id>/transfer/<originator_call_id>/blind')

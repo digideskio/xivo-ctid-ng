@@ -57,7 +57,7 @@ class CallControl(object):
         if not args:
             print "Your configuration is broken, missing arg on stasis..."
             return
-        elif args[0] == 'dialed':
+        elif args[0] == 'dialed' or args[0] == 'blindtransfer':
             bridge_id = args[1]
             self.bridge_join(bridge_id, channel)
         else:

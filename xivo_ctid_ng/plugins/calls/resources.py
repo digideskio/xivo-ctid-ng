@@ -241,8 +241,7 @@ class CallResource(AuthResource):
 class AnswerResource(AuthResource):
 
     def post(self, call_id):
-        request_body = request.json
-        source_user = request_body['source']['user']
+        source_user = request.json['source']['user']
 
         endpoint = endpoint_from_user_uuid(source_user)
 
@@ -252,6 +251,24 @@ class AnswerResource(AuthResource):
             bridge = ari.bridges.create(type='mixing')
             bridge.addChannel(channel=call_id)
             params = ['dialed', bridge.id]
+            ari.channels.originate(endpoint=endpoint,
+                                   app='callcontrol',
+                                   appArgs=params)
+
+class BlindTransferResource(AuthResource):
+
+    def post(self, call_id, originator_call_id):
+        destination_user = request.json['destination']['user']
+
+        endpoint = endpoint_from_user_uuid(destination_user)
+
+        with new_ari_client(current_app.config['ari']['connection']) as ari:
+            originator = ari.channels.get(channelId=originator_call_id)
+            ari.channels.ring(channelId=call_id)
+            bridge = ari.bridges.create(type='mixing')
+            bridge.addChannel(channel=call_id)
+            originator.hangup()
+            params = ['blindtransfer', bridge.id]
             ari.channels.originate(endpoint=endpoint,
                                    app='callcontrol',
                                    appArgs=params)

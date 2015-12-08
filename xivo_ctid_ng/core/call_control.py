@@ -16,6 +16,7 @@
 
 import ari
 import logging
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -48,22 +49,45 @@ class CallControl(object):
 
     def on_channel_event_start(self, channel_obj, event):
         channel = channel_obj.get('channel')
+        print "channel enter:", channel.id
         self.queue_callcontrol.put(_convert_event(event))
         if event:
             args = event.get('args')
 
         if not args:
+            print "Your configuration is broken, missing arg on stasis..."
             return
-
-        if args[0] == 'dialed':
+        elif args[0] == 'dialed':
             bridge_id = args[1]
             self.bridge_join(bridge_id, channel)
+        else:
+            print "incoming call"
+            self.incoming_call(channel, event)
 
     def on_channel_event_state_change(self, channel, event):
         self.queue_callcontrol.put(_convert_event(event))
 
+    def incoming_call(self, channel, event):
+        instance_name = event.get('args')[0].strip()
+        application_name = event.get('application')
+        incoming_room_id = "{}.{}".format(application_name, instance_name)
+
+        bridge_id = self.ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
+
+        if bridge_id:
+            bridge = self.ari.bridges.get(bridgeId=bridge_id)
+        else:
+            bridge = self.ari.bridges.create(type='holding')
+            bridge_id = bridge.id
+            self.ari.asterisk.setGlobalVar(variable=incoming_room_id, value=bridge_id)
+            bridge.startMoh()
+        channel.answer()
+        bridge.addChannel(bridgeId=bridge_id, channel=channel.id)
+        # TODO add incoming call event
+        #self.queue_callcontrol.put(_convert_event(event))
+
     def bridge_destroy(self, bridge_id):
-        print "destroy bridge:", bridge_id
+        print "bridge destroyed:", bridge_id
         bridge = self.ari.bridges.get(bridgeId=bridge_id)
         channels = bridge.json.get('channels')
 
@@ -74,7 +98,7 @@ class CallControl(object):
             bridge.destroy()
 
     def safe_hangup(self, channel):
-        print "hangup channel:", channel.id
+        print "channel hangup:", channel.id
         try:
             channel.hangup()
         except:

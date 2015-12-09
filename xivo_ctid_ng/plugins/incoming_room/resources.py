@@ -43,11 +43,26 @@ def new_ari_client(config):
 class IncomingRoomCallsResource(AuthResource):
 
     def get(self, incoming_room_id):
+
+        calls = []
         with new_ari_client(current_app.config['ari']['connection']) as ari:
             bridge_id = ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
             bridge = ari.bridges.get(bridgeId=bridge_id)
             channels = bridge.json.get('channels', None)
-            return {'channels': channels}, 201
+
+            for chan in channels:
+                channel = ari.channels.get(channelId=chan)
+                result_call = Call(channel.id, channel.json['creationtime'])
+                result_call.status = channel.json['state']
+                result_call.user_uuid = ""
+                result_call.bridges = list()
+                result_call.talking_to = dict()
+
+                calls.append(result_call)
+
+            return {
+                'items': [call.to_dict() for call in calls],
+            }, 201
 
 class IncomingRoomCallsAssociationResource(AuthResource):
 
@@ -61,3 +76,25 @@ class IncomingRoomCallsAssociationResource(AuthResource):
             bridge.addChannel(channel=call_id)
 
             return {'bridge_id': bridge.id}, 201
+
+
+class Call(object):
+
+    def __init__(self, id_, creation_time):
+        self.id_ = id_
+        self.creation_time = creation_time
+        self.bridges = []
+        self.status = 'Down'
+        self.talking_to = []
+        self.user_uuid = None
+
+    def to_dict(self):
+        return {
+            'bridges': self.bridges,
+            'call_id': self.id_,
+            'creation_time': self.creation_time,
+            'status': self.status,
+            'talking_to': self.talking_to,
+            'user_uuid': self.user_uuid,
+        }
+

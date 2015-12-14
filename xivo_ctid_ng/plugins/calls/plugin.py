@@ -17,13 +17,20 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from .resources import CallResource, CallsResource, AnswerResource, BlindTransferResource
+from .services import CallsService
 
 
 class Plugin(object):
 
     def load(self, dependencies):
         api = dependencies['api']
-        api.add_resource(CallsResource, '/calls')
-        api.add_resource(CallResource, '/calls/<call_id>')
+        token_changed_subscribe = dependencies['token_changed_subscribe']
+        config = dependencies['config']
+
+        calls_service = CallsService(ari_config=config['ari']['connection'], confd_config=config['confd'])
+        token_changed_subscribe(calls_service.set_confd_token)
+
+        api.add_resource(CallsResource, '/calls', resource_class_args=[calls_service])
+        api.add_resource(CallResource, '/calls/<call_id>', resource_class_args=[calls_service])
         api.add_resource(AnswerResource, '/calls/<call_id>/answer')
         api.add_resource(BlindTransferResource, '/calls/<call_id>/transfer/<originator_call_id>/blind')

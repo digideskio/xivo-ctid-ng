@@ -19,7 +19,6 @@ import os
 import logging
 import requests
 
-from collections import defaultdict
 from hamcrest import assert_that, equal_to
 from requests.packages import urllib3
 from xivo_test_helpers.asset_launching_test_case import AssetLaunchingTestCase
@@ -29,6 +28,7 @@ logger = logging.getLogger(__name__)
 urllib3.disable_warnings()
 
 ASSET_ROOT = os.path.join(os.path.dirname(__file__), '..', 'assets')
+INVALID_ACL_TOKEN = 'invalid-acl-token'
 VALID_TOKEN = 'valid-token'
 
 
@@ -38,16 +38,22 @@ class IntegrationTest(AssetLaunchingTestCase):
     service = 'ctid-ng'
 
     @classmethod
-    def get_calls_result(cls, token=None):
+    def get_calls_result(cls, application=None, application_instance=None, token=None):
         url = u'https://localhost:9500/1.0/calls'
+        params = {}
+        if application:
+            params['application'] = application
+            if application_instance:
+                params['application_instance'] = application_instance
         result = requests.get(url,
+                              params=params,
                               headers={'X-Auth-Token': token},
                               verify=False)
         return result
 
     @classmethod
-    def list_calls(cls, token=VALID_TOKEN):
-        response = cls.get_calls_result(token=token)
+    def list_calls(cls, application=None, application_instance=None, token=VALID_TOKEN):
+        response = cls.get_calls_result(application, application_instance, token)
         assert_that(response.status_code, equal_to(200))
         return response.json()
 
@@ -80,6 +86,12 @@ class IntegrationTest(AssetLaunchingTestCase):
         }
         if variables:
             body.update({'variables': variables})
+
+        return cls.post_call_raw(body, token)
+
+    @classmethod
+    def post_call_raw(cls, body, token=None):
+        url = u'https://localhost:9500/1.0/calls'
         result = requests.post(url,
                                json=body,
                                headers={'X-Auth-Token': token},
@@ -112,6 +124,13 @@ class IntegrationTest(AssetLaunchingTestCase):
                               headers={'X-Auth-Token': token},
                               verify=False)
         return result
+
+    @classmethod
+    def set_ari_applications(cls, *mock_applications):
+        url = 'http://localhost:5039/_set_response'
+        body = {'response': 'applications',
+                'content': {application.name(): application.to_dict() for application in mock_applications}}
+        requests.post(url, json=body)
 
     @classmethod
     def set_ari_channels(cls, *mock_channels):
@@ -186,12 +205,35 @@ class IntegrationTest(AssetLaunchingTestCase):
         return requests.get(url).json()
 
 
+class MockApplication(object):
+
+    def __init__(self, name, channels=None):
+        self._name = name
+        self._channels = channels or []
+
+    def name(self):
+        return self._name
+
+    def to_dict(self):
+        return {
+            'name': self._name,
+            'channel_ids': self._channels,
+        }
+
+
 class MockChannel(object):
 
-    def __init__(self, id, state='Ringing', creation_time='2015-01-01T00:00:00.0-0500'):
+    def __init__(self,
+                 id,
+                 state='Ringing',
+                 creation_time='2015-01-01T00:00:00.0-0500',
+                 caller_id_name='someone',
+                 caller_id_number='somewhere'):
         self._id = id
         self._state = state
         self._creation_time = creation_time
+        self._caller_id_name = caller_id_name
+        self._caller_id_number = caller_id_number
 
     def id_(self):
         return self._id
@@ -200,7 +242,11 @@ class MockChannel(object):
         return {
             'id': self._id,
             'state': self._state,
-            'creationtime': self._creation_time
+            'creationtime': self._creation_time,
+            'caller': {
+                'name': self._caller_id_name,
+                'number': self._caller_id_number
+            },
         }
 
 

@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "title": "xivo-ctid-ng",
+        "title": "XiVO CTId ng",
         "description": "Control your calls from a REST API",
         "version": "1.0.0"
     },
@@ -12,6 +12,8 @@
     "produces": [
         "application/json"
     ],
+    "x-xivo-port": 9500,
+    "x-xivo-name": "ctid-ng",
     "paths": {
         "/calls": {
             "get": {
@@ -20,11 +22,13 @@
                 "parameters": [
                     {
                         "name": "application",
+                        "description": "Filter calls by Stasis application, e.g. switchboard.",
                         "in": "query",
                         "type": "string"
                     },
                     {
                         "name": "application_instance",
+                        "description": "Filter calls by Stasis application instance, e.g. switchboard-sales,green. This value filters on the channel variable XIVO_STASIS_ARGS. Args should be separated by commas (,).",
                         "in": "query",
                         "type": "string"
                     },
@@ -601,6 +605,12 @@
                 "creation_time": {
                     "type": "string",
                     "format": "date-time"
+                },
+                "caller_id_name": {
+                    "type": "string"
+                },
+                "caller_id_number": {
+                    "type": "string"
                 }
             }
         },

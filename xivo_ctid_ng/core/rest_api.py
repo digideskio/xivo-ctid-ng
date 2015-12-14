@@ -26,8 +26,7 @@ from flask_restful import Api
 from flask_restful import Resource
 from flask_cors import CORS
 from xivo import http_helpers
-from xivo.auth_helpers import TokenRenewer
-from xivo_ctid_ng.core import auth
+from xivo_ctid_ng.core.auth import AuthVerifier
 from xivo_ctid_ng.core import exceptions
 from xivo_ctid_ng.core import plugin_manager
 
@@ -36,18 +35,20 @@ VERSION = 1.0
 logger = logging.getLogger(__name__)
 app = Flask('xivo_ctid_ng')
 api = Api(prefix='/{}'.format(VERSION))
+auth_verifier = AuthVerifier()
 
 
 class CoreRestApi(object):
 
-    def __init__(self, global_config):
+    def __init__(self, global_config, token_changed_subscribe):
         self.config = global_config['rest_api']
         http_helpers.add_logger(app, logger)
         app.after_request(http_helpers.log_request)
         app.secret_key = os.urandom(24)
         app.permanent_session_lifetime = timedelta(minutes=5)
+        auth_verifier.set_config(global_config['auth'])
         self._load_cors()
-        self._load_plugins(global_config)
+        self._load_plugins(global_config, token_changed_subscribe)
         api.init_app(app)
 
     def _load_cors(self):
@@ -56,17 +57,16 @@ class CoreRestApi(object):
         if enabled:
             CORS(app, **cors_config)
 
-    def _load_plugins(self, global_config):
+    def _load_plugins(self, global_config, token_changed_subscribe):
         load_args = [{
             'config': global_config,
             'api': api,
+            'token_changed_subscribe': token_changed_subscribe,
         }]
         plugin_manager.load_plugins(global_config['enabled_plugins'], load_args)
 
     def run(self):
         bind_addr = (self.config['listen'], self.config['port'])
-
-        token_renewer = _token_renewer(app)
 
         _check_file_readable(self.config['certificate'])
         _check_file_readable(self.config['private_key'])
@@ -81,8 +81,7 @@ class CoreRestApi(object):
             logger.debug(route)
 
         try:
-            with token_renewer:
-                server.start()
+            server.start()
         except KeyboardInterrupt:
             server.stop()
 
@@ -92,18 +91,9 @@ def _check_file_readable(file_path):
         pass
 
 
-def _token_renewer(self):
-    token_renewer = TokenRenewer(auth.client_service(app.config))
-    def on_token_change(token_id):
-        app.config['service_token'] = token_id
-    token_renewer.subscribe_to_token_change(on_token_change)
-
-    return token_renewer
-
-
 class ErrorCatchingResource(Resource):
     method_decorators = [exceptions.handle_api_exception] + Resource.method_decorators
 
 
 class AuthResource(ErrorCatchingResource):
-    method_decorators = [auth.verify_token] + ErrorCatchingResource.method_decorators
+    method_decorators = [auth_verifier.verify_token] + ErrorCatchingResource.method_decorators

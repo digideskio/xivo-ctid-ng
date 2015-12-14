@@ -18,6 +18,7 @@
 from hamcrest import assert_that
 from hamcrest import contains
 from hamcrest import contains_inanyorder
+from hamcrest import empty
 from hamcrest import equal_to
 from hamcrest import has_entries
 from hamcrest import has_entry
@@ -26,6 +27,7 @@ from hamcrest import has_items
 from hamcrest import contains_string
 
 from .base import IntegrationTest
+from .base import MockApplication
 from .base import MockBridge
 from .base import MockChannel
 from .base import MockLine
@@ -131,6 +133,56 @@ class TestListCalls(IntegrationTest):
             has_entries({'call_id': 'second-id',
                          'creation_time': 'second-time'}))))
 
+    def test_given_some_calls_when_list_calls_then_list_calls_with_caller_id(self):
+        self.set_ari_channels(MockChannel(id='first-id', caller_id_name='Weber', caller_id_number='4185556666'),
+                              MockChannel(id='second-id', caller_id_name='Denis', caller_id_number='4185557777'))
+
+        calls = self.list_calls()
+
+        assert_that(calls, has_entry('items', contains_inanyorder(
+            has_entries({'call_id': 'first-id',
+                         'caller_id_number': '4185556666',
+                         'caller_id_name': 'Weber'}),
+            has_entries({'call_id': 'second-id',
+                         'caller_id_number': '4185557777',
+                         'caller_id_name': 'Denis'}))))
+
+    def test_given_some_calls_when_list_calls_by_application_then_list_of_calls_is_filtered(self):
+        self.set_ari_channels(MockChannel(id='first-id'),
+                              MockChannel(id='second-id'),
+                              MockChannel(id='third-id'))
+        self.set_ari_applications(MockApplication(name='my-app', channels=['first-id', 'third-id']))
+
+        calls = self.list_calls(application='my-app')
+
+        assert_that(calls, has_entry('items', contains_inanyorder(
+            has_entries({'call_id': 'first-id'}),
+            has_entries({'call_id': 'third-id'}))))
+
+    def test_given_some_calls_and_no_applications_when_list_calls_by_application_then_no_calls(self):
+        self.set_ari_channels(MockChannel(id='first-id'),
+                              MockChannel(id='second-id'))
+
+        calls = self.list_calls(application='my-app', token=VALID_TOKEN)
+
+        assert_that(calls, has_entry('items', empty()))
+
+    def test_given_some_calls_when_list_calls_by_application_instance_then_list_of_calls_is_filtered(self):
+        self.set_ari_channels(MockChannel(id='first-id'),
+                              MockChannel(id='second-id'),
+                              MockChannel(id='third-id'),
+                              MockChannel(id='fourth-id'))
+        self.set_ari_applications(MockApplication(name='my-app', channels=['first-id', 'second-id', 'third-id']))
+        self.set_ari_channel_variable({'first-id': {'XIVO_STASIS_ARGS': 'appX'},
+                                       'second-id': {'XIVO_STASIS_ARGS': 'appY'},
+                                       'third-id': {'XIVO_STASIS_ARGS': 'appX'}})
+
+        calls = self.list_calls(application='my-app', application_instance='appX')
+
+        assert_that(calls, has_entry('items', contains_inanyorder(
+            has_entries({'call_id': 'first-id'}),
+            has_entries({'call_id': 'third-id'}))))
+
 
 class TestGetCall(IntegrationTest):
 
@@ -149,7 +201,7 @@ class TestGetCall(IntegrationTest):
         assert_that(result.status_code, equal_to(404))
 
     def test_given_one_call_when_get_call_then_get_call(self):
-        self.set_ari_channels(MockChannel(id='first-id', state='Up', creation_time='first-time'),
+        self.set_ari_channels(MockChannel(id='first-id', state='Up', creation_time='first-time', caller_id_name='Weber', caller_id_number='4185559999'),
                               MockChannel(id='second-id'))
         self.set_ari_bridges(MockBridge(id='bridge-id', channels=['first-id', 'second-id']))
         self.set_ari_channel_variable({'first-id': {'XIVO_USERID': 'user1-id'},
@@ -167,7 +219,9 @@ class TestGetCall(IntegrationTest):
                 'second-id': 'user2-uuid'
             },
             'bridges': contains('bridge-id'),
-            'creation_time': 'first-time'
+            'creation_time': 'first-time',
+            'caller_id_name': 'Weber',
+            'caller_id_number': '4185559999',
         }))
 
 
@@ -251,6 +305,24 @@ class TestCreateCall(IntegrationTest):
                                                'SECOND_VARIABLE': 'my-second-value'}}),
         }))))
 
+    def test_when_create_call_with_no_variables_then_ari_variables_are_empty(self):
+        user_uuid = 'user-uuid'
+        self.set_confd_users(MockUser(id='user-id', uuid='user-uuid'))
+        self.set_confd_lines(MockLine(id='line-id', name='line-name', protocol='sip'))
+        self.set_confd_user_lines({'user-id': [MockUserLine('user-id', 'line-id')]})
+        self.set_ari_originates(MockChannel(id='new-call-id'))
+
+        self.originate(source=user_uuid,
+                       priority='my-priority',
+                       extension='my-extension',
+                       context='my-context')
+
+        assert_that(self.ari_requests(), has_entry('requests', has_item(has_entries({
+            'method': 'POST',
+            'path': '/ari/channels',
+            'json': has_entries({'variables': {}}),
+        }))))
+
     def test_create_call_with_multiple_lines(self):
         user_uuid = 'user-uuid'
         self.set_confd_users(MockUser(id='user-id', uuid='user-uuid'))
@@ -295,23 +367,14 @@ class TestCreateCall(IntegrationTest):
         assert_that(result.status_code, equal_to(400))
         assert_that(result.json(), has_entry('message', contains_string('user')))
 
-    def test_when_create_call_with_no_variables_then_ari_variables_are_empty(self):
-        user_uuid = 'user-uuid'
-        self.set_confd_users(MockUser(id='user-id', uuid='user-uuid'))
-        self.set_confd_lines(MockLine(id='line-id', name='line-name', protocol='sip'))
-        self.set_confd_user_lines({'user-id': [MockUserLine('user-id', 'line-id')]})
-        self.set_ari_originates(MockChannel(id='new-call-id'))
+    def test_create_call_with_missing_source(self):
+        body = {'destination': {'priority': '1',
+                                'extension': 'myexten',
+                                'context': 'mycontext'}}
+        result = self.post_call_raw(body, token=VALID_TOKEN)
 
-        self.originate(source=user_uuid,
-                       priority='my-priority',
-                       extension='my-extension',
-                       context='my-context')
-
-        assert_that(self.ari_requests(), has_entry('requests', has_item(has_entries({
-            'method': 'POST',
-            'path': '/ari/channels',
-            'json': has_entries({'variables': {}}),
-        }))))
+        assert_that(result.status_code, equal_to(400))
+        assert_that(result.json(), has_entry('message', contains_string('source')))
 
 
 class TestNoConfd(IntegrationTest):

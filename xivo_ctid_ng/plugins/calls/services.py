@@ -160,7 +160,7 @@ class CallsService(object):
         ari.channels.hangup(channelId=channel_id)
 
     def answer(self, source_user, call_id):
-        endpoint = self_endpoint_from_user_uuid(source_user)
+        endpoint = self._endpoint_from_user_uuid(source_user)
 
         with new_ari_client(self._ari_config) as ari:
             ari.channels.answer(channelId=call_id)

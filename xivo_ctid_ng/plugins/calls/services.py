@@ -7,7 +7,10 @@ import requests
 
 from contextlib import contextmanager
 
+from flask import current_app
+
 from xivo_confd_client import Client as ConfdClient
+from xivo_amid_client import Client as AmidClient
 
 from .call import Call
 from .exceptions import AsteriskARIUnreachable
@@ -26,6 +29,11 @@ def new_confd_client(config):
 
 
 @contextmanager
+def new_amid_client(config):
+    yield AmidClient(**config)
+
+
+@contextmanager
 def new_ari_client(config):
     try:
         yield ari.connect(**config)
@@ -35,12 +43,14 @@ def new_ari_client(config):
 
 class CallsService(object):
 
-    def __init__(self, ari_config, confd_config):
+    def __init__(self, ari_config, confd_config, amid_config):
         self._ari_config = ari_config
         self._confd_config = confd_config
+        self._amid_config = amid_config
 
     def set_confd_token(self, confd_token):
         self._confd_config['token'] = confd_token
+        self._amid_config['token'] = confd_token
 
     def list_calls(self, application_filter=None, application_instance_filter=None):
         calls = []
@@ -148,6 +158,45 @@ class CallsService(object):
                 raise AsteriskARIUnreachable(self._ari_config, e)
 
         ari.channels.hangup(channelId=channel_id)
+
+    def answer(self, source_user, call_id):
+        endpoint = self_endpoint_from_user_uuid(source_user)
+
+        with new_ari_client(self._ari_config) as ari:
+            ari.channels.answer(channelId=call_id)
+            ari.channels.ring(channelId=call_id)
+            bridge = ari.bridges.create(type='mixing')
+            bridge.addChannel(channel=call_id)
+            params = ['dialed', bridge.id]
+            ari.channels.originate(endpoint=endpoint,
+                                   app='callcontrol',
+                                   appArgs=params)
+
+
+    def transfer(self, destination_user, call_id, originator_call_id):
+
+        endpoint = self._endpoint_from_user_uuid(destination_user)
+
+        with new_ari_client(self._ari_config) as ari:
+            originator = ari.channels.get(channelId=originator_call_id)
+            ari.channels.ring(channelId=call_id)
+            bridge = ari.bridges.create(type='mixing')
+            bridge.addChannel(channel=call_id)
+            originator.hangup()
+            params = ['blindtransfer', bridge.id]
+            ari.channels.originate(endpoint=endpoint,
+                                   app='callcontrol',
+                                   appArgs=params)
+
+
+    def transfer_via_ami(self, call_id, context, exten):
+        with new_amid_client(self._amid_config) as ami:
+            destination = {'Channel': call_id,
+                           'Context': context,
+                           'Exten': exten
+                          }
+            return ami.action('BlindTransfer', destination, token=self._amid_config['token'])
+
 
     def _endpoint_from_user_uuid(self, uuid):
         with new_confd_client(self._confd_config) as confd:

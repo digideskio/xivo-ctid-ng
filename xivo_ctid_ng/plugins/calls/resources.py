@@ -14,16 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
+import ari
 import logging
+import requests
 
+from contextlib import contextmanager
 from flask import request
 
 from xivo_ctid_ng.core.auth import required_acl
 from xivo_ctid_ng.core.rest_api import AuthResource
 
 from . import validator
+from .exceptions import AsteriskARIUnreachable
 
 logger = logging.getLogger(__name__)
+
+
+@contextmanager
+def new_ari_client(config):
+    try:
+        yield ari.connect(**config)
+    except requests.ConnectionError as e:
+        raise AsteriskARIUnreachable(config, e)
 
 
 class CallsResource(AuthResource):
@@ -72,35 +84,34 @@ class CallResource(AuthResource):
 
 class AnswerResource(AuthResource):
 
+    def __init__(self, calls_service):
+        self.calls_service = calls_service
+
     def post(self, call_id):
         source_user = request.json['source']['user']
 
-        endpoint = endpoint_from_user_uuid(source_user)
+        self.calls_service.answer(source_user, call_id)
 
-        with new_ari_client(current_app.config['ari']['connection']) as ari:
-            ari.channels.answer(channelId=call_id)
-            ari.channels.ring(channelId=call_id)
-            bridge = ari.bridges.create(type='mixing')
-            bridge.addChannel(channel=call_id)
-            params = ['dialed', bridge.id]
-            ari.channels.originate(endpoint=endpoint,
-                                   app='callcontrol',
-                                   appArgs=params)
 
 class BlindTransferResource(AuthResource):
+
+    def __init__(self, calls_service):
+        self.calls_service = calls_service
 
     def post(self, call_id, originator_call_id):
         destination_user = request.json['destination']['user']
 
-        endpoint = endpoint_from_user_uuid(destination_user)
+        self.calls_service.transfer(destination_user, call_id, originator_call_id)
 
-        with new_ari_client(current_app.config['ari']['connection']) as ari:
-            originator = ari.channels.get(channelId=originator_call_id)
-            ari.channels.ring(channelId=call_id)
-            bridge = ari.bridges.create(type='mixing')
-            bridge.addChannel(channel=call_id)
-            originator.hangup()
-            params = ['blindtransfer', bridge.id]
-            ari.channels.originate(endpoint=endpoint,
-                                   app='callcontrol',
-                                   appArgs=params)
+
+class BlindTransferAMIResource(AuthResource):
+
+    def __init__(self, calls_service):
+        self.calls_service = calls_service
+
+    def post(self, call_id, originator_call_id):
+        context = request.json['destination']['dialplan']['context']
+        exten = request.json['destination']['dialplan']['exten']
+
+        self.calls_service.transfer_via_ami(call_id, context, exten)
+

@@ -36,6 +36,7 @@ class Controller(object):
         MsgQueue = Queue()
         app.config['ari'] = config['ari']
         app.config['confd'] = config['confd']
+        app.config['amid'] = config['amid']
         auth_config = dict(config['auth'])
         auth_config.pop('key_file', None)
         auth_client = AuthClient(**auth_config)

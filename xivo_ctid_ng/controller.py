@@ -39,7 +39,7 @@ class Controller(object):
         auth_config = dict(config['auth'])
         auth_config.pop('key_file', None)
         auth_client = AuthClient(**auth_config)
-        self.token_renewer = TokenRenewer(auth_client, expiration=10)
+        self.token_renewer = TokenRenewer(auth_client)
         self.rest_api = CoreRestApi(config, self.token_renewer.subscribe_to_token_change)
         self.bus = CoreBus(config['bus'], MsgQueue)
         self.callcontrol = CoreCallControl(config['ari'], MsgQueue)

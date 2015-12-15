@@ -55,6 +55,7 @@ class CallControl(object):
             args = event.get('args')
 
         if not args:
+            print event
             print "Your configuration is broken, missing arg on stasis..."
             return
         elif args[0] == 'dialed' or args[0] == 'blindtransfer':
@@ -76,6 +77,9 @@ class CallControl(object):
 
         if bridge_id:
             bridge = self.ari.bridges.get(bridgeId=bridge_id)
+            if len(bridge.json.get('channels')) < 1:
+                print "bridge empty"
+                bridge.startMoh()
         else:
             bridge = self.ari.bridges.create(type='holding')
             bridge_id = bridge.id

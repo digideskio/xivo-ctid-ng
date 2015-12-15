@@ -113,5 +113,5 @@ class BlindTransferAMIResource(AuthResource):
         context = request.json['destination']['dialplan']['context']
         exten = request.json['destination']['dialplan']['exten']
 
-        self.calls_service.transfer_via_ami(call_id, context, exten)
+        print self.calls_service.transfer_via_ami(call_id, context, exten)
 

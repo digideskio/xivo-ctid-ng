@@ -27,6 +27,7 @@ from datetime import datetime
 
 from xivo_ctid_ng.core.rest_api import AuthResource
 
+from .call import Call
 from .exceptions import AsteriskARIUnreachable
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,8 @@ class WaitingRoomCallsResource(AuthResource):
                 result_call = Call(channel.id, channel.json['creationtime'])
                 result_call.status = channel.json['state']
                 result_call.user_uuid = ""
+                result_call.caller_id_number = channel.json['caller']['number']
+                result_call.caller_id_name = channel.json['caller']['name']
                 result_call.bridges = list()
                 result_call.talking_to = dict()
 
@@ -99,24 +102,3 @@ class WaitingRoomResource(AuthResource):
             bridge_id = ari.asterisk.getGlobalVar(variable=waiting_room_id).get('value', None)
             bridge = ari.bridges.get(bridgeID=bridge_id)
             bridge.removeChannel(call_id)
-
-class Call(object):
-
-    def __init__(self, id_, creation_time):
-        self.id_ = id_
-        self.creation_time = creation_time
-        self.bridges = []
-        self.status = 'Down'
-        self.talking_to = []
-        self.user_uuid = None
-
-    def to_dict(self):
-        return {
-            'bridges': self.bridges,
-            'call_id': self.id_,
-            'creation_time': self.creation_time,
-            'status': self.status,
-            'talking_to': self.talking_to,
-            'user_uuid': self.user_uuid,
-        }
-

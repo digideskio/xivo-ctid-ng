@@ -78,7 +78,6 @@ class CallControl(object):
         if bridge_id:
             bridge = self.ari.bridges.get(bridgeId=bridge_id)
             if len(bridge.json.get('channels')) < 1:
-                print "bridge empty"
                 bridge.startMoh()
         else:
             bridge = self.ari.bridges.create(type='holding')

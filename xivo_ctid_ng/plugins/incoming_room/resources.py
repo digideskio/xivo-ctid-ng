@@ -73,6 +73,8 @@ class IncomingRoomCallsAssociationResource(AuthResource):
         with new_ari_client(current_app.config['ari']['connection']) as ari:
             bridge_id = ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
             bridge = ari.bridges.get(bridgeId=bridge_id)
+            if len(bridge.json.get('channels')) < 1:
+                bridge.startMoh()
             channel = ari.channels.get(channelId=call_id)
             channel.answer()
             channel.setChannelVar(variable='bridgeentertime',value=datetime.now(tz.tzlocal()).isoformat())

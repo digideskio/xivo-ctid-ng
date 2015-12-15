@@ -173,7 +173,7 @@ class CallsService(object):
                                    appArgs=params)
 
 
-    def transfer(self, destination_user, call_id, originator_call_id):
+    def blind_transfer(self, destination_user, call_id, originator_call_id):
 
         endpoint = self._endpoint_from_user_uuid(destination_user)
 

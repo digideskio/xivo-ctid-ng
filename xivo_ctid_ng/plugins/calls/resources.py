@@ -101,7 +101,7 @@ class BlindTransferResource(AuthResource):
     def post(self, call_id, originator_call_id):
         destination_user = request.json['destination']['user']
 
-        self.calls_service.transfer(destination_user, call_id, originator_call_id)
+        self.calls_service.blind_transfer(destination_user, call_id, originator_call_id)
 
 
 class BlindTransferAMIResource(AuthResource):

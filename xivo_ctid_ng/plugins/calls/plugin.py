@@ -38,4 +38,4 @@ class Plugin(object):
         api.add_resource(CallResource, '/calls/<call_id>', resource_class_args=[calls_service])
         api.add_resource(AnswerResource, '/calls/<call_id>/answer', resource_class_args=[calls_service])
         api.add_resource(BlindTransferResource, '/calls/<call_id>/transfer/<originator_call_id>/blind', resource_class_args=[calls_service])
-        api.add_resource(BlindTransferAMIResource, '/calls/<call_id>/transfer/ami/<originator_call_id>/blind', resource_class_args=[calls_service])
+        api.add_resource(BlindTransferAMIResource, '/calls/<call_id_transfered>/transfer/ami/blind', resource_class_args=[calls_service])

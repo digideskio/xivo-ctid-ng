@@ -189,13 +189,14 @@ class CallsService(object):
                                    appArgs=params)
 
 
-    def transfer_via_ami(self, call_id, context, exten):
+    def transfer_via_ami(self, call_id_transfered, context, exten):
         with new_amid_client(self._amid_config) as ami:
-            destination = {'Channel': call_id,
+            destination = {'Channel': call_id_transfered,
                            'Context': context,
-                           'Exten': exten
+                           'Exten': exten,
+                           'Priority': 1
                           }
-            return ami.action('BlindTransfer', destination, token=self._amid_config['token'])
+            return ami.action('Redirect', destination, token=self._amid_config['token'])
 
 
     def _endpoint_from_user_uuid(self, uuid):

@@ -48,7 +48,11 @@ class IncomingRoomCallsResource(AuthResource):
         calls = []
         with new_ari_client(current_app.config['ari']['connection']) as ari:
             bridge_id = ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
-            bridge = ari.bridges.get(bridgeId=bridge_id)
+            try:
+                bridge = ari.bridges.get(bridgeId=bridge_id)
+            except requests.HTTPError:
+                return {'message': 'There is no incoming bridge'}, 200
+
             channels = bridge.json.get('channels', None)
 
             for chan in channels:

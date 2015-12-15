@@ -198,6 +198,7 @@ class CallsService(object):
                           }
             return ami.action('Redirect', destination, token=self._amid_config['token'])
 
+
     def attended_transfer_via_ami(self, call_id_transfered, context, exten):
         with new_amid_client(self._amid_config) as ami:
             destination = {'Channel': call_id_transfered,
@@ -206,6 +207,16 @@ class CallsService(object):
                            'Priority': 1
                           }
             return ami.action('Atxfer', destination, token=self._amid_config['token'])
+
+
+    def convert_channel_to_stasis(self, call_id):
+        with new_amid_client(self._amid_config) as ami:
+            destination = {'Channel': call_id,
+                           'Context': 'default',
+                           'Exten': '1234',
+                           'Priority': 1
+                          }
+        ami.action('Redirect', destination, token=self._amid_config['token'])
 
 
     def _endpoint_from_user_uuid(self, uuid):

@@ -126,3 +126,10 @@ class AttendedTransferAMIResource(AuthResource):
 
         print self.calls_service.attended_transfer_via_ami(call_id_transfered, context, exten)
 
+class ConvertChannelToStasis(AuthResource):
+
+    def __init__(self, calls_service):
+        self.calls_service = calls_service
+
+    def post(self, call_id):
+        self.calls_service.convert_channel_to_stasis(call_id)

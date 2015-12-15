@@ -189,7 +189,7 @@ class CallsService(object):
                                    appArgs=params)
 
 
-    def transfer_via_ami(self, call_id_transfered, context, exten):
+    def blind_transfer_via_ami(self, call_id_transfered, context, exten):
         with new_amid_client(self._amid_config) as ami:
             destination = {'Channel': call_id_transfered,
                            'Context': context,
@@ -197,6 +197,15 @@ class CallsService(object):
                            'Priority': 1
                           }
             return ami.action('Redirect', destination, token=self._amid_config['token'])
+
+    def attended_transfer_via_ami(self, call_id_transfered, context, exten):
+        with new_amid_client(self._amid_config) as ami:
+            destination = {'Channel': call_id_transfered,
+                           'Context': context,
+                           'Exten': exten,
+                           'Priority': 1
+                          }
+            return ami.action('Atxfer', destination, token=self._amid_config['token'])
 
 
     def _endpoint_from_user_uuid(self, uuid):

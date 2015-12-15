@@ -21,6 +21,7 @@ from .resources import CallsResource
 from .resources import AnswerResource
 from .resources import BlindTransferResource
 from .resources import BlindTransferAMIResource
+from .resources import AttendedTransferAMIResource
 from .services import CallsService
 
 
@@ -39,3 +40,4 @@ class Plugin(object):
         api.add_resource(AnswerResource, '/calls/<call_id>/answer', resource_class_args=[calls_service])
         api.add_resource(BlindTransferResource, '/calls/<call_id>/transfer/<originator_call_id>/blind', resource_class_args=[calls_service])
         api.add_resource(BlindTransferAMIResource, '/calls/<call_id_transfered>/transfer/ami/blind', resource_class_args=[calls_service])
+        api.add_resource(AttendedTransferAMIResource, '/calls/<call_id_transfered>/transfer/ami/attended', resource_class_args=[calls_service])

@@ -113,5 +113,16 @@ class BlindTransferAMIResource(AuthResource):
         context = request.json['destination']['dialplan']['context']
         exten = request.json['destination']['dialplan']['exten']
 
-        print self.calls_service.transfer_via_ami(call_id_transfered, context, exten)
+        print self.calls_service.blind_transfer_via_ami(call_id_transfered, context, exten)
+
+class AttendedTransferAMIResource(AuthResource):
+
+    def __init__(self, calls_service):
+        self.calls_service = calls_service
+
+    def post(self, call_id_transfered):
+        context = request.json['destination']['dialplan']['context']
+        exten = request.json['destination']['dialplan']['exten']
+
+        print self.calls_service.attended_transfer_via_ami(call_id_transfered, context, exten)
 

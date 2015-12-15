@@ -126,6 +126,8 @@ def _convert_event(event):
     result.status = event['channel']['state']
     result.talking_to = []
     result.user_uuid = None
+    result.caller_id_number = event['channel']['caller']['number']
+    result.caller_id_name = event['channel']['caller']['name']
     result.event = event['type']
     result.application = event['application']
 
@@ -138,15 +140,19 @@ class Call(object):
         self.creation_time = creation_time
         self.bridges = []
         self.status = 'Down'
-        self.talking_to = []
-        self.user_uuid = None
         self.event = None
         self.application = None
+        self.talking_to = []
+        self.user_uuid = None
+        self.caller_id_name = ''
+        self.caller_id_number = ''
 
     def to_dict(self):
         return {
             'bridges': self.bridges,
             'call_id': self.id_,
+            'caller_id_name': self.caller_id_name,
+            'caller_id_number': self.caller_id_number,
             'creation_time': self.creation_time,
             'status': self.status,
             'talking_to': self.talking_to,

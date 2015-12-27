@@ -16,13 +16,25 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from .resources import WaitingRoomResource, WaitingRoomCallsResource, WaitingRoomCallsAssociationResource
+from .resources import WaitingRoomResource
+from .resources import WaitingRoomCallsResource
+from .resources import WaitingRoomCallsAssociationResource
+from .services import WaitingRoomCallsService
+from .stasis import WaitingRoomCallsStasis
 
 
 class Plugin(object):
 
     def load(self, dependencies):
         api = dependencies['api']
-        api.add_resource(WaitingRoomResource, '/hold/<waiting_room_id>')
-        api.add_resource(WaitingRoomCallsResource, '/hold/<waiting_room_id>/calls')
-        api.add_resource(WaitingRoomCallsAssociationResource, '/hold/<waiting_room_id>/calls/<call_id>')
+        ari = dependencies['ari']
+        bus = dependencies['bus']
+        config = dependencies['config']
+
+        calls_service = WaitingRoomCallsService(config['ari']['connection'], ari)
+        calls_stasis = WaitingRoomCallsStasis(ari.client, bus, calls_service)
+        calls_stasis.subscribe()
+
+        api.add_resource(WaitingRoomResource, '/hold/<waiting_room_id>', resource_class_args=[calls_service])
+        api.add_resource(WaitingRoomCallsResource, '/hold/<waiting_room_id>/calls', resource_class_args=[calls_service])
+        api.add_resource(WaitingRoomCallsAssociationResource, '/hold/<waiting_room_id>/calls/<call_id>', resource_class_args=[calls_service])

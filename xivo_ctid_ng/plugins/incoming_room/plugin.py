@@ -29,7 +29,7 @@ class Plugin(object):
         bus = dependencies['bus']
         config = dependencies['config']
 
-        calls_service = IncomingRoomCallsService(config['ari']['connection'], config['confd'], ari)
+        calls_service = IncomingRoomCallsService(config['ari']['connection'], ari)
         calls_stasis = IncomingRoomCallsStasis(ari.client, bus, calls_service)
         calls_stasis.subscribe()
 

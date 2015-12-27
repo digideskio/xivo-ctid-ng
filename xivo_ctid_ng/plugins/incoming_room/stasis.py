@@ -47,9 +47,11 @@ class IncomingRoomCallsStasis(object):
         channel.answer()
         bridge.addChannel(bridgeId=bridge_id, channel=channel.id)
 
-        bus_event = JoinCallIncomingRoomEvent({})
+        call = self.services.make_call_from_channel(self.ari, event_objects['channel'])
+        bus_event = JoinCallIncomingRoomEvent(call.to_dict())
         self.bus.publish(bus_event)
 
-    def leave_incoming_call(self, event_objects, event):
-        bus_event = LeaveCallIncomingRoomEvent({})
+    def leave_incoming_call(self, channel, event):
+        call = self.services.make_call_from_channel(self.ari, channel)
+        bus_event = LeaveCallIncomingRoomEvent(call.to_dict())
         self.bus.publish(bus_event)

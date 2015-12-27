@@ -467,6 +467,42 @@
                         "$ref": "#/responses/AnotherServiceUnavailable"
                     }
                 }
+            },
+            "delete": {
+                "summary": "Delete waiting room",
+                "description": "Delete waiting room",
+                "parameters": [
+                    {
+                        "name": "holding_id",
+                        "in": "path",
+                        "description": "Holding ID",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "$ref": "#/parameters/token"
+                    }
+                ],
+                "tags": [
+                    "hold"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Waiting room is destroyed"
+                    },
+                    "404": {
+                        "description": "No such waiting call",
+                        "schema": {
+                            "type": "object",
+                            "items": {
+                                "$ref": "#/definitions/Error"
+                            }
+                        }
+                    },
+                    "503": {
+                        "$ref": "#/responses/AnotherServiceUnavailable"
+                    }
+                }
             }
         },
         "/hold/{holding_id}/calls/{call_id}": {

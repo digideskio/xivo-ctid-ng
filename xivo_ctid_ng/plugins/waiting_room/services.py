@@ -70,10 +70,10 @@ class WaitingRoomCallsService(AuthResource):
 
         return bridge.id
 
-    def create_waiting_room(self, waiting_room_id):
+    def create_waiting_room(self, waiting_room_id, request):
         ari = self._ari.client
 
-        moh_hold = request.json.get('moh', None)
+        moh_hold = request.get('moh', None)
 
         hold_bridge = ari.asterisk.getGlobalVar(variable=waiting_room_id).get('value', None)
         if hold_bridge:
@@ -84,7 +84,7 @@ class WaitingRoomCallsService(AuthResource):
         if moh_hold:
             bridge.startMoh(mohClass=moh_hold)
 
-        event = {'bridge_id': bridge_id,
+        event = {'bridge_id': bridge.id,
                  'waiting_room_id': waiting_room_id
                 }
         bus_event = CreateWaitingRoomEvent(event)
@@ -92,15 +92,15 @@ class WaitingRoomCallsService(AuthResource):
 
         return bridge.id
 
-    def delete_call_from_waiting_room(self, waiting_room_id, call_id):
+    def delete_call_from_waiting_room(self, waiting_room_id):
         ari = self._ari.client
 
         bridge_id = ari.asterisk.getGlobalVar(variable=waiting_room_id).get('value', None)
-        bridge = ari.bridges.get(bridgeID=bridge_id)
-        bridge.removeChannel(call_id)
+        ari.asterisk.setGlobalVar(variable=waiting_room_id, value='')
+        bridge = ari.bridges.destroy(bridgeId=bridge_id)
 
         event = {'waiting_room_id': waiting_room_id,
-                 'call_id': call_id
+                 'bridge_id': bridge_id
                 }
         bus_event = DeleteWaitingRoomEvent(event)
         self.bus.publish(bus_event)

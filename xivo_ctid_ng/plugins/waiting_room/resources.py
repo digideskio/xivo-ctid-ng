@@ -16,6 +16,8 @@
 
 import logging
 
+from flask import request
+
 from xivo_ctid_ng.core.rest_api import AuthResource
 
 logger = logging.getLogger(__name__)
@@ -47,9 +49,10 @@ class WaitingRoomResource(AuthResource):
         self.calls_service = calls_service
 
     def post(self, waiting_room_id):
-        bridge_id = self.calls_service.create_waiting_room(waiting_room_id)
+        request_body = request.json
+        bridge_id = self.calls_service.create_waiting_room(waiting_room_id, request_body)
 
         return {'bridge_id': bridge_id}, 201
 
-    def delete(self, waiting_room_id, call_id):
-        self.calls_service.delete_call_from_waiting_room(waiting_room_id, call_id)
+    def delete(self, waiting_room_id):
+        self.calls_service.delete_call_from_waiting_room(waiting_room_id)

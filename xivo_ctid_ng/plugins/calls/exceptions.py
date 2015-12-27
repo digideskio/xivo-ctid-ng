@@ -1,18 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2015 Avencall
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>
+# Copyright 2015 by Avencall
+# SPDX-License-Identifier: GPL-3.0+
 
 from xivo_ctid_ng.core.exceptions import APIException
 
@@ -70,9 +58,27 @@ class CallCreationError(APIException):
         )
 
 
-class InvalidUserUUID(ValueError):
-    pass
+class InvalidUserUUID(APIException):
+
+    def __init__(self, user_id):
+        super(InvalidUserUUID, self).__init__(
+            status_code=400,
+            message='Invalid user: not found',
+            error_id='invalid-user',
+            details={
+                'user_id': user_id
+            }
+        )
 
 
-class UserHasNoLine(ValueError):
-    pass
+class UserHasNoLine(APIException):
+
+    def __init__(self, user_id):
+        super(UserHasNoLine, self).__init__(
+            status_code=400,
+            message='Invalid user: user has no line',
+            error_id='user-has-no-line',
+            details={
+                'user_id': user_id
+            }
+        )

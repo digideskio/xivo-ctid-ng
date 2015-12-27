@@ -1,76 +1,61 @@
 # -*- coding: utf-8 -*-
-# Copyright (C) 2015 Avencall
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>
+# Copyright 2015 by Avencall
+# SPDX-License-Identifier: GPL-3.0+
 
-import json
 import logging
 
 from kombu import Connection
 from kombu import Exchange
-from kombu import Queue
-from kombu.pools import producers
+from kombu import Producer
+from Queue import Queue
 from Queue import Empty
-import json
+
+from xivo_bus import Marshaler
+from xivo_bus import Publisher
 
 logger = logging.getLogger(__name__)
 
 
 class CoreBus(object):
 
-    def __init__(self, config, queue):
-        super(CoreBus, self).__init__()
-        self.config = config
-        self.queue = queue
-        self.publish = None
+    def __init__(self, global_config):
+        self.config = global_config['bus']
+        self._queue = Queue()
+        self._running = False
+        self._should_stop = False
+        self._uuid = global_config['uuid']
+        self._bus_publisher = None
 
     def run(self):
         logger.info("Running AMQP interfaces publisher")
-        self._publish()
 
-    def stop(self):
-        if self.publish:
-           self.publish.should_stop = True
-
-    def _publish(self):
-        uri = 'amqp://{username}:{password}@{host}:{port}//'.format(**self.config)
-        with producers[Connection(uri)].acquire(block=True) as conn:
-            self.publish = Publisher(conn, self.queue)
-            self.publish.init_app(self.config)
-            self.publish.run()
-
-class Publisher(object):
-    def __init__(self, connection, queue):
-        self.conn = connection
-        self.queue = queue
-        self.exchange = None
-        self.routing_key = None
-        self.type = None
-        self.should_stop = False
-
-    def init_app(self, config):
-        self.exchange = config['exchange_name']
-        self.type = config['exchange_type']
-        self.routing_key = 'calls'
-
-    def run(self):
-        while not self.should_stop:
+        self._running = True
+        while not self._should_stop:
             try:
-                message = self.queue.get(timeout=0.1)
-                self.publish(json.dumps(message))
+                message = self._queue.get(timeout=0.1)
+                self._send_message(message)
             except Empty:
                 pass
+        self._running = False
+        self._should_stop = False
 
-    def publish(self, data):
-        self.conn.publish(data, exchange=self.exchange, routing_key=self.routing_key)
+    def _send_message(self, message):
+        if self._bus_publisher is None:
+            self._bus_publisher = self._make_publisher()
+
+        self._bus_publisher.publish(message)
+
+    def _make_publisher(self):
+        bus_url = 'amqp://{username}:{password}@{host}:{port}//'.format(**self.config)
+        bus_connection = Connection(bus_url)
+        bus_exchange = Exchange(self.config['exchange_name'], type=self.config['exchange_type'])
+        bus_producer = Producer(bus_connection, exchange=bus_exchange, auto_declare=True)
+        bus_marshaler = Marshaler(self._uuid)
+        return Publisher(bus_producer, bus_marshaler)
+
+    def publish(self, event):
+        self._queue.put(event)
+
+    def stop(self):
+        if self._running:
+            self._should_stop = True

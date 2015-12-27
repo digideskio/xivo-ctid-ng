@@ -168,10 +168,9 @@
                 }
             }
         },
-        "/calls/{call_id}/answer": {
-            "post": {
-                "summary": "Answer a call",
-                "description": "Answer a call",
+        "/calls/{call_id}/user/{user_id}": {
+            "put": {
+                "summary": "Connect a call to a user",
                 "parameters": [
                     {
                         "name": "call_id",
@@ -181,13 +180,11 @@
                         "type": "string"
                     },
                     {
-                        "name": "body",
-                        "in": "body",
-                        "description": "Call parameters",
+                        "name": "user_id",
+                        "in": "path",
+                        "description": "UUID of the user",
                         "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/CallAnswer"
-                        }
+                        "type": "string"
                     },
                     {
                         "$ref": "#/parameters/token"
@@ -197,22 +194,10 @@
                     "calls"
                 ],
                 "responses": {
-                    "201": {
-                        "description": "The new call ID",
+                    "200": {
+                        "description": "The new call of the user (ringing side)",
                         "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Call"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No such call",
-                        "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Error"
-                            }
+                            "$ref": "#/definitions/Call"
                         }
                     },
                     "503": {
@@ -769,20 +754,6 @@
             "properties": {
                 "call_id": {
                     "type": "string"
-                }
-            }
-        },
-        "CallAnswer": {
-            "type": "object",
-            "properties": {
-                "source": {
-                    "description": "Caller parameters",
-                    "type": "object",
-                    "properties": {
-                        "user": {
-                            "type": "string"
-                        }
-                    }
                 }
             }
         },

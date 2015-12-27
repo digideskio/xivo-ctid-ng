@@ -1,31 +1,17 @@
 # -*- coding: utf-8 -*-
-#
-# Copyright (C) 2015 Avencall
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>
+# Copyright 2015 by Avencall
+# SPDX-License-Identifier: GPL-3.0+
 
 import logging
-from Queue import Queue
 
 from threading import Thread
 from xivo.auth_helpers import TokenRenewer
 from xivo_auth_client import Client as AuthClient
 
-from xivo_ctid_ng.core.rest_api import app
-from xivo_ctid_ng.core.rest_api import CoreRestApi
+from xivo_ctid_ng.core import plugin_manager
 from xivo_ctid_ng.core.bus import CoreBus
-from xivo_ctid_ng.core.call_control import CoreCallControl
+from xivo_ctid_ng.core.ari_ import CoreARI
+from xivo_ctid_ng.core.rest_api import api, CoreRestApi
 
 logger = logging.getLogger(__name__)
 
@@ -33,33 +19,37 @@ logger = logging.getLogger(__name__)
 class Controller(object):
 
     def __init__(self, config):
-        MsgQueue = Queue()
-        app.config['ari'] = config['ari']
-        app.config['confd'] = config['confd']
-        app.config['amid'] = config['amid']
         auth_config = dict(config['auth'])
         auth_config.pop('key_file', None)
         auth_client = AuthClient(**auth_config)
         self.token_renewer = TokenRenewer(auth_client)
-        self.rest_api = CoreRestApi(config, self.token_renewer.subscribe_to_token_change)
-        self.bus = CoreBus(config['bus'], MsgQueue)
-        self.callcontrol = CoreCallControl(config['ari'], MsgQueue)
+        self.bus = CoreBus(config)
+        self.ari = CoreARI(config['ari'])
+        self.rest_api = CoreRestApi(config)
+        self._load_plugins(config)
 
     def run(self):
         logger.info('xivo-ctid-ng starting...')
         bus_thread = Thread(target=self.bus.run, name='bus_thread')
         bus_thread.start()
-        callcontrol_thread = Thread(target=self.callcontrol.run, name='callcontrol_thread')
-        callcontrol_thread.start()
+        ari_thread = Thread(target=self.ari.run, name='ari_thread')
+        ari_thread.start()
         try:
             with self.token_renewer:
                 self.rest_api.run()
         finally:
             logger.info('xivo-ctid-ng stopping...')
             self.bus.stop()
-            try:
-                self.callcontrol.stop()
-            except:
-                pass
+            self.ari.stop()
             bus_thread.join()
-            callcontrol_thread.join()
+            ari_thread.join()
+
+    def _load_plugins(self, global_config):
+        load_args = [{
+            'api': api,
+            'ari': self.ari,
+            'bus': self.bus,
+            'config': global_config,
+            'token_changed_subscribe': self.token_renewer.subscribe_to_token_change,
+        }]
+        plugin_manager.load_plugins(global_config['enabled_plugins'], load_args)

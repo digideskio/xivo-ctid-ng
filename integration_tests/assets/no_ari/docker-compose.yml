@@ -6,7 +6,8 @@ sync:
     - ctid-ng
     - rabbitmq
   environment:
-    PORTS: "5672 9486 9497 9500"
+    PORTS: "5672 9486 9497"
+    TIMEOUT: "5"
 
 auth:
   image: p0bailey/docker-flask
@@ -41,5 +42,5 @@ ctid-ng:
 
 rabbitmq:
   image: rabbitmq
-  expose:
-    - "5672"
+  ports:
+    - "5672:5672"

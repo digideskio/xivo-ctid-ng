@@ -59,7 +59,7 @@ class IncomingRoomCallsService(object):
 
             calls.append(result_call)
 
-        return { 'items': [call.to_dict() for call in calls] }
+        return [{ 'data': [call.to_dict() for call in calls] }]
 
     def add_call(self, incoming_room_id, call_id):
         ari = self._ari.client

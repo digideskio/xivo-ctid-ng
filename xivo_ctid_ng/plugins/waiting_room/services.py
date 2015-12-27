@@ -57,7 +57,7 @@ class WaitingRoomCallsService(AuthResource):
 
             calls.append(result_call)
 
-        return { 'items': [call.to_dict() for call in calls] }
+        return [{ 'data': [call.to_dict() for call in calls] }]
 
     def add_call(self, waiting_room_id, call_id):
         ari = self._ari.client
@@ -70,9 +70,10 @@ class WaitingRoomCallsService(AuthResource):
         bridge.addChannel(channel=call_id)
 
         event = {'bridge_id': bridge_id,
-                 'waiting_room_id': waiting_room_id
+                 'waiting_room_id': waiting_room_id,
+                 'call_id': call_id
                 }
-        bus_event = JoinWaitingRoomEvent(event)
+        bus_event = JoinCallWaitingRoomEvent(event)
         self.bus.publish(bus_event)
 
         return bridge.id

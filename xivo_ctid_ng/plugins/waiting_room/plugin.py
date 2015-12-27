@@ -31,7 +31,7 @@ class Plugin(object):
         bus = dependencies['bus']
         config = dependencies['config']
 
-        calls_service = WaitingRoomCallsService(config['ari']['connection'], ari)
+        calls_service = WaitingRoomCallsService(config['ari']['connection'], ari, bus)
         calls_stasis = WaitingRoomCallsStasis(ari.client, bus, calls_service)
         calls_stasis.subscribe()
 

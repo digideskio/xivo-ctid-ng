@@ -23,14 +23,18 @@ from xivo_ctid_ng.core.rest_api import AuthResource
 
 from .call import Call
 
+from xivo_bus.resources.calls.event import CreateWaitingRoomEvent
+from xivo_bus.resources.calls.event import DeleteWaitingRoomEvent
+
 logger = logging.getLogger(__name__)
 
 
 class WaitingRoomCallsService(AuthResource):
 
-    def __init__(self, ari_config, ari):
+    def __init__(self, ari_config, ari, bus):
         self._ari_config = ari_config
         self._ari = ari
+        self.bus = bus
 
     def list_calls(self, waiting_room_id):
         ari = self._ari.client
@@ -80,6 +84,12 @@ class WaitingRoomCallsService(AuthResource):
         if moh_hold:
             bridge.startMoh(mohClass=moh_hold)
 
+        event = {'bridge_id': bridge_id,
+                 'waiting_room_id': waiting_room_id
+                }
+        bus_event = CreateWaitingRoomEvent(event)
+        self.bus.publish(bus_event)
+
         return bridge.id
 
     def delete_call_from_waiting_room(self, waiting_room_id, call_id):
@@ -88,3 +98,9 @@ class WaitingRoomCallsService(AuthResource):
         bridge_id = ari.asterisk.getGlobalVar(variable=waiting_room_id).get('value', None)
         bridge = ari.bridges.get(bridgeID=bridge_id)
         bridge.removeChannel(call_id)
+
+        event = {'waiting_room_id': waiting_room_id,
+                 'call_id': call_id
+                }
+        bus_event = DeleteWaitingRoomEvent(event)
+        self.bus.publish(bus_event)

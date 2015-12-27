@@ -14,74 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
-import ari
 import logging
-import requests
 
-from flask import current_app
-from flask import request
-from contextlib import contextmanager
-
-from dateutil import tz
-from datetime import datetime
-
+from xivo_ctid_ng.core.auth import required_acl
 from xivo_ctid_ng.core.rest_api import AuthResource
-
-from .call import Call
-from .exceptions import AsteriskARIUnreachable
 
 logger = logging.getLogger(__name__)
 
 
-@contextmanager
-def new_ari_client(config):
-    try:
-        yield ari.connect(**config)
-    except requests.ConnectionError as e:
-        raise AsteriskARIUnreachable(config, e)
-
-
 class IncomingRoomCallsResource(AuthResource):
 
+    def __init__(self, calls_service):
+        self.calls_service = calls_service
+
+    @required_acl('ctid-ng.incoming_room.list_calls')
     def get(self, incoming_room_id):
+        items = self.calls_service.list_calls(incoming_room_id)
 
-        calls = []
-        with new_ari_client(current_app.config['ari']['connection']) as ari:
-            bridge_id = ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
-            try:
-                bridge = ari.bridges.get(bridgeId=bridge_id)
-            except requests.HTTPError:
-                return {'message': 'There is no incoming bridge'}, 200
-
-            channels = bridge.json.get('channels', None)
-
-            for chan in channels:
-                channel = ari.channels.get(channelId=chan)
-                result_call = Call(channel.id, channel.json['creationtime'])
-                result_call.status = channel.json['state']
-                result_call.user_uuid = ""
-                result_call.caller_id_number = channel.json['caller']['number']
-                result_call.caller_id_name = channel.json['caller']['name']
-                result_call.bridges = list()
-                result_call.talking_to = dict()
-
-                calls.append(result_call)
-
-            return {
-                'items': [call.to_dict() for call in calls],
-            }, 201
+        return items, 201
 
 class IncomingRoomCallsAssociationResource(AuthResource):
 
-    def put(self, incoming_room_id, call_id):
-        with new_ari_client(current_app.config['ari']['connection']) as ari:
-            bridge_id = ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
-            bridge = ari.bridges.get(bridgeId=bridge_id)
-            if len(bridge.json.get('channels')) < 1:
-                bridge.startMoh()
-            channel = ari.channels.get(channelId=call_id)
-            channel.answer()
-            channel.setChannelVar(variable='bridgeentertime',value=datetime.now(tz.tzlocal()).isoformat())
-            bridge.addChannel(channel=call_id)
+    def __init__(self, calls_service):
+        self.calls_service = calls_service
 
-            return {'bridge_id': bridge.id}, 201
+    @required_acl('ctid-ng.incoming_room.add_call')
+    def put(self, incoming_room_id, call_id):
+        bridge_id = self.calls_service.add_call(incoming_room_id, call_id)
+
+        return {'bridge_id': bridge_id}, 201

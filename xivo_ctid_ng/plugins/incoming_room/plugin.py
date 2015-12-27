@@ -16,12 +16,22 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-from .resources import IncomingRoomCallsResource, IncomingRoomCallsAssociationResource
-
+from .resources import IncomingRoomCallsResource
+from .resources import IncomingRoomCallsAssociationResource
+from .services import IncomingRoomCallsService
+from .stasis import IncomingRoomCallsStasis
 
 class Plugin(object):
 
     def load(self, dependencies):
         api = dependencies['api']
-        api.add_resource(IncomingRoomCallsResource, '/incoming/<incoming_room_id>/calls')
-        api.add_resource(IncomingRoomCallsAssociationResource, '/incoming/<incoming_room_id>/calls/<call_id>')
+        ari = dependencies['ari']
+        bus = dependencies['bus']
+        config = dependencies['config']
+
+        calls_service = IncomingRoomCallsService(config['ari']['connection'], config['confd'], ari)
+        calls_stasis = IncomingRoomCallsStasis(ari.client, bus, calls_service)
+        calls_stasis.subscribe()
+
+        api.add_resource(IncomingRoomCallsResource, '/incoming/<incoming_room_id>/calls', resource_class_args=[calls_service])
+        api.add_resource(IncomingRoomCallsAssociationResource, '/incoming/<incoming_room_id>/calls/<call_id>', resource_class_args=[calls_service])

@@ -16,7 +16,6 @@ ADD ./contribs/docker/certs /usr/share/xivo-certs
 WORKDIR /usr/src/xivo-ctid-ng
 
 RUN pip install -r requirements.txt
-RUN pip install -U requests
 RUN python setup.py install
 RUN cp -av etc/xivo-ctid-ng /etc
 RUN mkdir -p /etc/xivo-ctid-ng/conf.d

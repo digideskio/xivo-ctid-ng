@@ -4,11 +4,8 @@
 
 import logging
 
-from xivo_bus.resources.calls.event import JoinCallWaitingRoomEvent 
 from xivo_bus.resources.calls.event import LeaveCallWaitingRoomEvent
 from xivo_bus.resources.calls.event import UpdateWaitingRoomEvent
-from xivo_bus.resources.calls.event import CreateWaitingRoomEvent
-from xivo_bus.resources.calls.event import DeleteWaitingRoomEvent
 
 logger = logging.getLogger(__name__)
 

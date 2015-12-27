@@ -23,6 +23,7 @@ from xivo_ctid_ng.core.rest_api import AuthResource
 
 from .call import Call
 
+from xivo_bus.resources.calls.event import JoinCallWaitingRoomEvent 
 from xivo_bus.resources.calls.event import CreateWaitingRoomEvent
 from xivo_bus.resources.calls.event import DeleteWaitingRoomEvent
 
@@ -67,6 +68,12 @@ class WaitingRoomCallsService(AuthResource):
         channel.answer()
         channel.setChannelVar(variable='bridgeentertime',value=datetime.now(tz.tzlocal()).isoformat())
         bridge.addChannel(channel=call_id)
+
+        event = {'bridge_id': bridge_id,
+                 'waiting_room_id': waiting_room_id
+                }
+        bus_event = JoinWaitingRoomEvent(event)
+        self.bus.publish(bus_event)
 
         return bridge.id
 

@@ -15,6 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>
 
 import logging
+import requests
 
 from dateutil import tz
 from datetime import datetime
@@ -23,11 +24,14 @@ from xivo_ctid_ng.core.rest_api import AuthResource
 
 from .call import Call
 
-from xivo_bus.resources.calls.event import JoinCallWaitingRoomEvent 
 from xivo_bus.resources.calls.event import CreateWaitingRoomEvent
 from xivo_bus.resources.calls.event import DeleteWaitingRoomEvent
 
 logger = logging.getLogger(__name__)
+
+
+def not_found(error):
+    return error.response is not None and error.response.status_code == 404
 
 
 class WaitingRoomCallsService(AuthResource):
@@ -57,7 +61,7 @@ class WaitingRoomCallsService(AuthResource):
 
             calls.append(result_call)
 
-        return [{ 'data': [call.to_dict() for call in calls] }]
+        return { 'data': [call.to_dict() for call in calls] }
 
     def add_call(self, waiting_room_id, call_id):
         ari = self._ari.client
@@ -68,13 +72,6 @@ class WaitingRoomCallsService(AuthResource):
         channel.answer()
         channel.setChannelVar(variable='bridgeentertime',value=datetime.now(tz.tzlocal()).isoformat())
         bridge.addChannel(channel=call_id)
-
-        event = {'bridge_id': bridge_id,
-                 'waiting_room_id': waiting_room_id,
-                 'call_id': call_id
-                }
-        bus_event = JoinCallWaitingRoomEvent(event)
-        self.bus.publish(bus_event)
 
         return bridge.id
 
@@ -87,7 +84,7 @@ class WaitingRoomCallsService(AuthResource):
         if hold_bridge:
             return {'message': 'Bridge already exist'}, 200
 
-        bridge = ari.bridges.create(type='holding')
+        bridge = ari.bridges.create(type='holding', name=waiting_room_id)
         ari.asterisk.setGlobalVar(variable=waiting_room_id, value=bridge.id)
         if moh_hold:
             bridge.startMoh(mohClass=moh_hold)
@@ -112,3 +109,41 @@ class WaitingRoomCallsService(AuthResource):
                 }
         bus_event = DeleteWaitingRoomEvent(event)
         self.bus.publish(bus_event)
+
+    def make_call_from_channel(self, ari, channel):
+        call = Call(channel.id, channel.json['creationtime'])
+        call.status = channel.json['state']
+        call.caller_id_name = channel.json['caller']['name']
+        call.caller_id_number = channel.json['caller']['number']
+        call.user_uuid = self._get_uuid_from_channel_id(ari, channel.id)
+        call.bridges = [bridge.id for bridge in ari.bridges.list() if channel.id in bridge.json['channels']]
+
+        call.talking_to = dict()
+        for channel_id in self._get_channel_ids_from_bridges(ari, call.bridges):
+            talking_to_user_uuid = self._get_uuid_from_channel_id(ari, channel_id)
+            call.talking_to[channel_id] = talking_to_user_uuid
+        call.talking_to.pop(channel.id, None)
+
+        return call
+
+    def _get_uuid_from_channel_id(self, ari, channel_id):
+        try:
+            return ari.channels.getChannelVar(channelId=channel_id, variable='XIVO_USERUUID')['value']
+        except requests.HTTPError as e:
+            if not_found(e):
+                return None
+            raise
+
+        return None
+
+    def _get_channel_ids_from_bridges(self, ari, bridges):
+        result = set()
+        for bridge_id in bridges:
+            try:
+                channels = ari.bridges.get(bridgeId=bridge_id).json['channels']
+            except requests.RequestException as e:
+                logger.error(e)
+                channels = set()
+            result.update(channels)
+        return result
+

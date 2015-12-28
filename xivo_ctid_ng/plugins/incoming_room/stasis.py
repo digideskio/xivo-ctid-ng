@@ -18,10 +18,35 @@ class IncomingRoomCallsStasis(object):
         self.services = services
 
     def subscribe(self):
-        self.ari.on_channel_event('StasisStart', self.join_incoming_call)
-        self.ari.on_channel_event('StasisEnd', self.leave_incoming_call)
+        self.ari.on_channel_event('StasisStart', self.join_call_incoming_room)
+        self.ari.on_channel_event('ChannelEnteredBridge', self.join_incoming_room)
+        self.ari.on_channel_event('ChannelLeftBridge', self.leave_incoming_room)
 
-    def join_incoming_call(self, event_objects, event):
+    def leave_incoming_room(self, channel, event):
+        incoming_room_id = event.get('bridge').get('name')
+        if 'hold' in incoming_room_id:
+            return
+        bridge_id = self.ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
+        bridge_real_id = event.get('bridge').get('id')
+
+        if bridge_id == bridge_real_id:
+            call = self.services.make_call_from_channel(self.ari, channel)
+            bus_event = LeaveCallIncomingRoomEvent(call.to_dict())
+            self.bus.publish(bus_event)
+
+    def join_incoming_room(self, channel, event):
+        incoming_room_id = event.get('bridge').get('name')
+        if 'hold' in incoming_room_id:
+            return
+        bridge_id = self.ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
+        bridge_real_id = event.get('bridge').get('id')
+
+        if bridge_id == bridge_real_id:
+            call = self.services.make_call_from_channel(self.ari, channel)
+            bus_event = JoinCallIncomingRoomEvent(call.to_dict())
+            self.bus.publish(bus_event)
+
+    def join_call_incoming_room(self, event_objects, event):
         if event:
             args = event.get('args')
  
@@ -40,18 +65,9 @@ class IncomingRoomCallsStasis(object):
             if len(bridge.json.get('channels')) < 1:
                 bridge.startMoh()
         else:
-            bridge = self.ari.bridges.create(type='holding')
+            bridge = self.ari.bridges.create(type='holding', name=incoming_room_id)
             bridge_id = bridge.id
             self.ari.asterisk.setGlobalVar(variable=incoming_room_id, value=bridge_id)
             bridge.startMoh()
         channel.answer()
         bridge.addChannel(bridgeId=bridge_id, channel=channel.id)
-
-        call = self.services.make_call_from_channel(self.ari, event_objects['channel'])
-        bus_event = JoinCallIncomingRoomEvent(call.to_dict())
-        self.bus.publish(bus_event)
-
-    def leave_incoming_call(self, channel, event):
-        call = self.services.make_call_from_channel(self.ari, channel)
-        bus_event = LeaveCallIncomingRoomEvent(call.to_dict())
-        self.bus.publish(bus_event)

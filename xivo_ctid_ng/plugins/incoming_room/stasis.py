@@ -26,6 +26,8 @@ class IncomingRoomCallsStasis(object):
         incoming_room_id = event.get('bridge').get('name')
         if 'hold' in incoming_room_id:
             return
+        if not incoming_room_id:
+            return
         bridge_id = self.ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
         bridge_real_id = event.get('bridge').get('id')
 
@@ -37,6 +39,8 @@ class IncomingRoomCallsStasis(object):
     def join_incoming_room(self, channel, event):
         incoming_room_id = event.get('bridge').get('name')
         if 'hold' in incoming_room_id:
+            return
+        if not incoming_room_id:
             return
         bridge_id = self.ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
         bridge_real_id = event.get('bridge').get('id')

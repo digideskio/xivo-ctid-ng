@@ -75,3 +75,4 @@ enabled_plugins:
   - calls
   - waiting_room
   - incoming_room
+  - chat

@@ -31,7 +31,7 @@ class Plugin(object):
 
         api.add_resource(CallsResource, '/calls', resource_class_args=[calls_service])
         api.add_resource(CallResource, '/calls/<call_id>', resource_class_args=[calls_service])
-        api.add_resource(ConnectCallToUserResource, '/calls/<call_id>/user/<user_id>', resource_class_args=[calls_service])
+        api.add_resource(ConnectCallToUserResource, '/calls/<call_id>/user/<user_uuid>', resource_class_args=[calls_service])
         api.add_resource(BlindTransferResource, '/calls/<call_id>/transfer/<originator_call_id>/blind', resource_class_args=[calls_service])
         api.add_resource(BlindTransferAMIResource, '/calls/<call_id_transfered>/transfer/ami/blind', resource_class_args=[calls_service])
         api.add_resource(AttendedTransferAMIResource, '/calls/<call_id_transfered>/transfer/ami/attended', resource_class_args=[calls_service])

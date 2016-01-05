@@ -29,7 +29,11 @@ class WaitingRoomCallsStasis(object):
         bridge_id = self.ari.asterisk.getGlobalVar(variable=waiting_room_id).get('value', None)
         bridge_real_id = event.get('bridge').get('id')
 
+
         if bridge_id == bridge_real_id:
+            bridge = self.ari.bridges.get(bridgeId=bridge_id)
+            if len(bridge.json.get('channels')) == 1:
+                bridge.startMoh()
             call = self.services.make_call_from_channel(self.ari, channel)
             bus_event = JoinCallWaitingRoomEvent(call.to_dict())
             self.bus.publish(bus_event)

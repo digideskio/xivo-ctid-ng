@@ -23,6 +23,7 @@ class CallsStasis(object):
         self.ari.on_channel_event('StasisStart', self.relay_channel_created)
         self.ari.on_channel_event('ChannelStateChange', self.relay_channel_updated)
         self.ari.on_channel_event('ChannelLeftBridge', self.relay_channel_bridge_left)
+        self.ari.on_channel_event('ChannelDestroyed', self.relay_channel_ended)
         self.ari.on_channel_event('StasisEnd', self.relay_channel_ended)
 
     def relay_channel_bridge_left(self, channel, event):

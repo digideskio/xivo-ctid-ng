@@ -10,6 +10,8 @@ from xivo_amid_client import Client as AmidClient
 
 from xivo_ctid_ng.core.ari_ import APPLICATION_NAME
 
+from xivo_bus.resources.calls.event import CreateCallEvent
+
 from .call import Call
 from .exceptions import AsteriskARIUnreachable
 from .exceptions import InvalidUserUUID
@@ -36,11 +38,12 @@ def not_found(error):
 
 class CallsService(object):
 
-    def __init__(self, ari_config, confd_config, ari, amid_config):
+    def __init__(self, ari_config, confd_config, ari, amid_config, bus):
         self._ari_config = ari_config
         self._confd_config = confd_config
         self._amid_config = amid_config
         self._ari = ari
+        self.bus = bus
 
     def set_confd_token(self, confd_token):
         self._confd_config['token'] = confd_token
@@ -177,6 +180,10 @@ class CallsService(object):
         new_channel = ari.channels.originate(endpoint=endpoint,
                                              app=APPLICATION_NAME,
                                              appArgs=['dialed_from', channel_id])
+
+        call = self.make_call_from_channel(ari, new_channel)
+        bus_event = CreateCallEvent(call.to_dict())
+        self.bus.publish(bus_event)
 
         # if the caller hangs up, we cancel our originate
         originate_canceller = channel.on_event('StasisEnd', lambda _, __: self.hangup(new_channel.id))

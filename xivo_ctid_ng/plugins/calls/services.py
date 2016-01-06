@@ -93,9 +93,13 @@ class CallsService(object):
                                              context=request['destination']['context'],
                                              priority=request['destination']['priority'],
                                              variables={'variables': request.get('variables', {})})
+
             return channel.id
         except requests.RequestException as e:
             raise AsteriskARIUnreachable(self._ari_config, e)
+
+    def toto(self):
+        print "TOTO"
 
     def get(self, call_id):
         channel_id = call_id

@@ -27,12 +27,13 @@ class CallsStasis(object):
         self.ari.on_channel_event('StasisEnd', self.relay_channel_ended)
 
     def relay_channel_bridge_left(self, channel, event):
+        logger.debug('Relaying to bus: channel %s left bridge', channel.id)
         if event.get('bridge').get('bridge_type') == 'mixing' and not event.get('bridge').get('name'):
-          channel_id = event.get('bridge').get('channels', None)
-          if channel_id:
-              for chan in channel_id:
-                  channel = self.ari.channels.get(channelId=chan)
-                  channel.hangup()
+            channel_ids = event.get('bridge').get('channels', None)
+            if channel_ids:
+                for chan in channel_ids:
+                    channel = self.ari.channels.get(channelId=chan)
+                    channel.hangup()
 
     def bridge_connect_user(self, event_objects, event):
         if not event.get('args'):

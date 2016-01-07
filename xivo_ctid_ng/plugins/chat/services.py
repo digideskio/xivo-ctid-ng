@@ -30,7 +30,7 @@ class ChatService(AuthResource):
 
     def send(self, request):
         user_from = self.config.get('uuid'), request.get('from')
-        to = self.config.get('uuid'), request.get('to')
+        to = request.get('to')
         msg = request.get('msg')
         alias = request.get('alias')
 

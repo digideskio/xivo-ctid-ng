@@ -30,7 +30,7 @@ class PresenceService(AuthResource):
 
     def send(self, request):
         user_id = request.get('user_id')
-        status = request.get('status_id')
+        status_name = request.get('status_name')
 
-        bus_event = UserStatusUpdateEvent(user_id, status)
+        bus_event = UserStatusUpdateEvent(user_id, status_name)
         self.bus.publish(bus_event)

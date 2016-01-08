@@ -928,8 +928,8 @@
                     "description": "User ID",
                     "type": "string"
                 },
-                "status_id": {
-                    "description": "Presence status",
+                "status_name": {
+                    "description": "Presence status name (ex. available)",
                     "type": "string"
                 }
             }

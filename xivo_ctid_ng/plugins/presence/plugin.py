@@ -29,4 +29,4 @@ class Plugin(object):
 
         presence_service = PresenceService(bus, config)
 
-        api.add_resource(PresenceResource, '/chat/', resource_class_args=[presence_service])
+        api.add_resource(PresenceResource, '/presence/', resource_class_args=[presence_service])

@@ -924,11 +924,11 @@
         "PresenceRequest": {
             "type": "object",
             "properties": {
-                "id": {
+                "user_id": {
                     "description": "User ID",
                     "type": "string"
                 },
-                "status": {
+                "status_id": {
                     "description": "Presence status",
                     "type": "string"
                 }

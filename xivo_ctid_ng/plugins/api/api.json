@@ -725,6 +725,37 @@
                     }
                 }
             }
+        },
+        "/presence/": {
+            "put": {
+                "summary": "Update CTI presence",
+                "description": "Update CTI presence",
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "Presence parameters",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PresenceRequest"
+                        }
+                    },
+                    {
+                        "$ref": "#/parameters/token"
+                    }
+                ],
+                "tags": [
+                    "presence"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Presence has been updated"
+                    },
+                    "503": {
+                        "$ref": "#/responses/AnotherServiceUnavailable"
+                    }
+                }
+            }
         }
     },
     "responses": {
@@ -886,6 +917,19 @@
                 },
                 "alias": {
                     "description": "Alias parameters",
+                    "type": "string"
+                }
+            }
+        },
+        "PresenceRequest": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "User ID",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "Presence status",
                     "type": "string"
                 }
             }

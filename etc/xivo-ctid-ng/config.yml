@@ -76,3 +76,4 @@ enabled_plugins:
   - waiting_room
   - incoming_room
   - chat
+  - presence

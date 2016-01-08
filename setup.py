@@ -29,6 +29,7 @@ setup(
             'waiting_room = xivo_ctid_ng.plugins.waiting_room.plugin:Plugin',
             'incoming_room = xivo_ctid_ng.plugins.incoming_room.plugin:Plugin',
             'chat = xivo_ctid_ng.plugins.chat.plugin:Plugin',
+            'presence = xivo_ctid_ng.plugins.presence.plugin:Plugin',
         ]
     }
 )

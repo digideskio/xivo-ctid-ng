@@ -67,7 +67,10 @@ class IncomingRoomCallsStasis(object):
         if bridge_id:
             bridge = self.ari.bridges.get(bridgeId=bridge_id)
             if len(bridge.json.get('channels')) < 1:
-                bridge.startMoh()
+                try:
+                    bridge.startMoh()
+                except:
+                    pass
         else:
             bridge = self.ari.bridges.create(type='holding', name=incoming_room_id)
             bridge_id = bridge.id

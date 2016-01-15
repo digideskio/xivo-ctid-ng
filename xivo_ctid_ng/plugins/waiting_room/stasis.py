@@ -33,7 +33,10 @@ class WaitingRoomCallsStasis(object):
         if bridge_id == bridge_real_id:
             bridge = self.ari.bridges.get(bridgeId=bridge_id)
             if len(bridge.json.get('channels')) == 1:
-                bridge.startMoh()
+                try:
+                    bridge.startMoh()
+                except:
+                    pass
             call = self.services.make_call_from_channel(self.ari, channel)
             bus_event = JoinCallWaitingRoomEvent(call.to_dict())
             self.bus.publish(bus_event)

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2015 by Avencall
 # SPDX-License-Identifier: GPL-3.0+
 
@@ -98,9 +99,6 @@ class CallsService(object):
         except requests.RequestException as e:
             raise AsteriskARIUnreachable(self._ari_config, e)
 
-    def toto(self):
-        print "TOTO"
-
     def get(self, call_id):
         channel_id = call_id
         ari = self._ari.client
@@ -125,7 +123,6 @@ class CallsService(object):
 
         ari.channels.hangup(channelId=channel_id)
 
-
     def blind_transfer(self, destination_user, call_id, originator_call_id):
         endpoint = self._endpoint_from_user_uuid(destination_user)
         ari = self._ari.client
@@ -140,7 +137,6 @@ class CallsService(object):
                                app='callcontrol',
                                appArgs=params)
 
-
     def blind_transfer_via_ami(self, call_id_transfered, context, exten):
         with new_amid_client(self._amid_config) as ami:
             destination = {'Channel': call_id_transfered,
@@ -150,7 +146,6 @@ class CallsService(object):
                           }
             return ami.action('Redirect', destination, token=self._amid_config['token'])
 
-
     def attended_transfer_via_ami(self, call_id_transfered, context, exten):
         with new_amid_client(self._amid_config) as ami:
             destination = {'Channel': call_id_transfered,
@@ -159,7 +154,6 @@ class CallsService(object):
                            'Priority': 1
                           }
             return ami.action('Atxfer', destination, token=self._amid_config['token'])
-
 
     def convert_channel_to_stasis(self, call_id):
         with new_amid_client(self._amid_config) as ami:

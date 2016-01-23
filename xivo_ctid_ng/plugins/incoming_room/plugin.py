@@ -26,7 +26,7 @@ class Plugin(object):
     def load(self, dependencies):
         api = dependencies['api']
         ari = dependencies['ari']
-        bus = dependencies['bus']
+        bus = dependencies['bus_publisher']
         config = dependencies['config']
 
         calls_service = IncomingRoomCallsService(config['ari']['connection'], ari)

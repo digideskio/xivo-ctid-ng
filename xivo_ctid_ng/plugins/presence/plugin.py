@@ -24,7 +24,7 @@ class Plugin(object):
 
     def load(self, dependencies):
         api = dependencies['api']
-        bus = dependencies['bus']
+        bus = dependencies['bus_publisher']
         config = dependencies['config']
 
         presence_service = PresenceService(bus, config)

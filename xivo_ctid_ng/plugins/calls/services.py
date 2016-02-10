@@ -15,6 +15,7 @@ from xivo_bus.resources.calls.event import CreateCallEvent
 
 from .call import Call
 from .exceptions import AsteriskARIUnreachable
+from .exceptions import CallConnectError
 from .exceptions import InvalidUserUUID
 from .exceptions import NoSuchCall
 from .exceptions import UserHasNoLine
@@ -174,10 +175,18 @@ class CallsService(object):
         except requests.HTTPError as e:
             if not_found(e):
                 raise NoSuchCall(channel_id)
+            raise
+
+        try:
+            app_instance = ari.channels.getChannelVar(channelId=channel.id, variable='XIVO_STASIS_ARGS')['value']
+        except requests.HTTPError as e:
+            if not_found(e):
+                raise CallConnectError(call_id)
+            raise
 
         new_channel = ari.channels.originate(endpoint=endpoint,
                                              app=APPLICATION_NAME,
-                                             appArgs=['dialed_from', channel_id])
+                                             appArgs=[app_instance, 'dialed_from', channel_id])
 
         call = self.make_call_from_channel(ari, new_channel)
         bus_event = CreateCallEvent(call.to_dict())

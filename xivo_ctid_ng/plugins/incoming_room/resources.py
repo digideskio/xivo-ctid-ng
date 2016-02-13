@@ -27,7 +27,7 @@ class IncomingRoomCallsResource(AuthResource):
     def __init__(self, calls_service):
         self.calls_service = calls_service
 
-    @required_acl('ctid-ng.incoming_room.list_calls')
+    @required_acl('ctid-ng.incoming_room.read')
     def get(self, incoming_room_id):
         items = self.calls_service.list_calls(incoming_room_id)
 
@@ -38,7 +38,7 @@ class IncomingRoomCallsAssociationResource(AuthResource):
     def __init__(self, calls_service):
         self.calls_service = calls_service
 
-    @required_acl('ctid-ng.incoming_room.add_call')
+    @required_acl('ctid-ng.incoming_room.update')
     def put(self, incoming_room_id, call_id):
         bridge_id = self.calls_service.add_call(incoming_room_id, call_id)
 

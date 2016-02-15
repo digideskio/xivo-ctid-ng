@@ -46,13 +46,13 @@ class CallResource(AuthResource):
     def __init__(self, calls_service):
         self.calls_service = calls_service
 
-    @required_acl('ctid-ng.calls.{call.id}.read')
+    @required_acl('ctid-ng.calls.{call_id}.read')
     def get(self, call_id):
         call = self.calls_service.get(call_id)
 
         return call.to_dict()
 
-    @required_acl('ctid-ng.calls.{call.id}.delete')
+    @required_acl('ctid-ng.calls.{call_id}.delete')
     def delete(self, call_id):
         self.calls_service.hangup(call_id)
 
@@ -64,7 +64,7 @@ class ConnectCallToUserResource(AuthResource):
     def __init__(self, calls_service):
         self.calls_service = calls_service
 
-    @required_acl('ctid-ng.calls.{call.id}.user.{user_uuid}.update')
+    @required_acl('ctid-ng.calls.{call_id}.user.{user_uuid}.update')
     def put(self, call_id, user_uuid):
         new_call_id = self.calls_service.connect_user(call_id, user_uuid)
         new_call = self.calls_service.get(new_call_id)

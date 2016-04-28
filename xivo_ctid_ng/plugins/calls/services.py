@@ -27,10 +27,6 @@ def new_confd_client(config):
     yield ConfdClient(**config)
 
 
-def not_found(error):
-    return error.response is not None and error.response.status_code == 404
-
-
 class CallsService(object):
 
     def __init__(self, ari_config, confd_config, ari):

@@ -22,7 +22,7 @@ class Plugin(object):
         token_changed_subscribe = dependencies['token_changed_subscribe']
         config = dependencies['config']
 
-        calls_service = CallsService(config['ari']['connection'], config['confd'], ari, config['amid'], bus_publisher)
+        calls_service = CallsService(config['ari']['connection'], config['confd'], ari)
         token_changed_subscribe(calls_service.set_confd_token)
 
         calls_stasis = CallsStasis(ari.client, collectd, bus_publisher, calls_service, config['uuid'])

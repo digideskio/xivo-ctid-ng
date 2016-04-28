@@ -8,12 +8,9 @@ import requests
 from contextlib import contextmanager
 from requests import HTTPError
 from xivo_confd_client import Client as ConfdClient
-from xivo_amid_client import Client as AmidClient
 
 from xivo_ctid_ng.core.ari_ import APPLICATION_NAME, not_found
 from ari.exceptions import ARINotFound
-
-from xivo_bus.resources.calls.event import CreateCallEvent
 
 from .call import Call
 from .exceptions import CallConnectError
@@ -30,27 +27,19 @@ def new_confd_client(config):
     yield ConfdClient(**config)
 
 
-@contextmanager
-def new_amid_client(config):
-    yield AmidClient(**config)
-
-
 def not_found(error):
     return error.response is not None and error.response.status_code == 404
 
 
 class CallsService(object):
 
-    def __init__(self, ari_config, confd_config, ari, amid_config, bus):
+    def __init__(self, ari_config, confd_config, ari):
         self._ari_config = ari_config
         self._confd_config = confd_config
-        self._amid_config = amid_config
         self._ari = ari
-        self.bus = bus
 
     def set_confd_token(self, confd_token):
         self._confd_config['token'] = confd_token
-        self._amid_config['token'] = confd_token
 
     def list_calls(self, application_filter=None, application_instance_filter=None):
         ari = self._ari.client
@@ -128,10 +117,6 @@ class CallsService(object):
                                              app=APPLICATION_NAME,
                                              appArgs=[app_instance, 'dialed_from', channel_id],
                                              variables={'variables': {'XIVO_STASIS_ARGS': app_instance}})
-
-        call = self.make_call_from_channel(ari, new_channel)
-        bus_event = CreateCallEvent(call.to_dict())
-        self.bus.publish(bus_event)
 
         # if the caller hangs up, we cancel our originate
         originate_canceller = channel.on_event('StasisEnd', lambda _, __: self.hangup(new_channel.id))

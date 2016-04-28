@@ -204,51 +204,29 @@
                 }
             }
         },
-        "/calls/{call_id}/transfer/ami/blind": {
+        "/transfers": {
             "post": {
-                "summary": "Blind transfer a call (AMI)",
-                "description": "Blind transfer a call (AMI)",
+                "summary": "Initiate a transfer",
+                "description": "**Required ACL:** `ctid-ng.transfers.create`\n\nThe only way to cancel the transfer from the initiator is to use `DELETE /transfers/<id>` (i.e. sending DTMF `*0` will not work).",
                 "parameters": [
-                    {
-                        "name": "call_id",
-                        "in": "path",
-                        "description": "ID of the call transfered",
-                        "required": true,
-                        "type": "string"
-                    },
                     {
                         "name": "body",
                         "in": "body",
-                        "description": "Call parameters",
+                        "description": "Parameters of the transfer",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/CallAMITransfer"
+                            "$ref": "#/definitions/TransferRequest"
                         }
-                    },
-                    {
-                        "$ref": "#/parameters/token"
                     }
                 ],
                 "tags": [
-                    "calls"
+                    "transfers"
                 ],
                 "responses": {
                     "201": {
-                        "description": "The new call ID",
+                        "description": "The transfer being created",
                         "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Call"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No such call",
-                        "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Error"
-                            }
+                            "$ref": "#/definitions/Transfer"
                         }
                     },
                     "503": {
@@ -257,52 +235,50 @@
                 }
             }
         },
-        "/calls/{call_id}/transfer/ami/attended": {
-            "post": {
-                "summary": "Attended transfer a call (AMI)",
-                "description": "Attended transfer a call (AMI)",
+        "/transfers/{transfer_id}": {
+            "get": {
+                "summary": "Get details of a transfer",
+                "description": "**Required ACL:** `ctid-ng.transfers.{transfer_id}.read`",
                 "parameters": [
                     {
-                        "name": "call_id",
-                        "in": "path",
-                        "description": "ID of the call transfered",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "description": "Call parameters",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/CallAMITransfer"
-                        }
-                    },
-                    {
-                        "$ref": "#/parameters/token"
+                        "$ref": "#/parameters/TransferID"
                     }
                 ],
                 "tags": [
-                    "calls"
+                    "transfers"
                 ],
                 "responses": {
-                    "201": {
-                        "description": "The new call ID",
+                    "200": {
+                        "description": "The details of the transfer",
                         "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Call"
-                            }
+                            "$ref": "#/definitions/Transfer"
                         }
                     },
                     "404": {
-                        "description": "No such call",
-                        "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Error"
-                            }
-                        }
+                        "$ref": "#/responses/NoSuchTransfer"
+                    },
+                    "503": {
+                        "$ref": "#/responses/AnotherServiceUnavailable"
+                    }
+                }
+            },
+            "delete": {
+                "summary": "Cancel a transfer",
+                "description": "**Required ACL:** `ctid-ng.transfers.{transfer_id}.delete`",
+                "parameters": [
+                    {
+                        "$ref": "#/parameters/TransferID"
+                    }
+                ],
+                "tags": [
+                    "transfers"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Transfer cancelled"
+                    },
+                    "404": {
+                        "$ref": "#/responses/NoSuchTransfer"
                     },
                     "503": {
                         "$ref": "#/responses/AnotherServiceUnavailable"
@@ -310,59 +286,24 @@
                 }
             }
         },
-        "/calls/{call_id}/transfer/{originator_call_id}/blind": {
-            "post": {
-                "summary": "Blind transfer a call",
-                "description": "Blind transfer a call",
+        "/transfers/{transfer_id}/complete": {
+            "put": {
+                "summary": "Complete a transfer",
+                "description": "**Required ACL:** `ctid-ng.transfers.{transfer_id}.complete.update`",
                 "parameters": [
                     {
-                        "name": "originator_call_id",
-                        "in": "path",
-                        "description": "ID of the originator",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "name": "call_id",
-                        "in": "path",
-                        "description": "ID of the call",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "description": "Call parameters",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/CallBlindTransfer"
-                        }
-                    },
-                    {
-                        "$ref": "#/parameters/token"
+                        "$ref": "#/parameters/TransferID"
                     }
                 ],
                 "tags": [
-                    "calls"
+                    "transfers"
                 ],
                 "responses": {
-                    "201": {
-                        "description": "The new call ID",
-                        "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Call"
-                            }
-                        }
+                    "204": {
+                        "description": "The transfer was completed"
                     },
                     "404": {
-                        "description": "No such call",
-                        "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Error"
-                            }
-                        }
+                        "$ref": "#/responses/NoSuchTransfer"
                     },
                     "503": {
                         "$ref": "#/responses/AnotherServiceUnavailable"
@@ -649,50 +590,6 @@
                 }
             }
         },
-        "/calls/{call_id}/stasis": {
-            "post": {
-                "summary": "Transfer channel to stasis (AMI)",
-                "description": "Transfer channel to stasis (AMI)",
-                "parameters": [
-                    {
-                        "name": "call_id",
-                        "in": "path",
-                        "description": "ID of the call",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "$ref": "#/parameters/token"
-                    }
-                ],
-                "tags": [
-                    "calls"
-                ],
-                "responses": {
-                    "201": {
-                        "description": "The new call ID",
-                        "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Call"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "No such call",
-                        "schema": {
-                            "type": "object",
-                            "items": {
-                                "$ref": "#/definitions/Error"
-                            }
-                        }
-                    },
-                    "503": {
-                        "$ref": "#/responses/AnotherServiceUnavailable"
-                    }
-                }
-            }
-        },
         "/chat/": {
             "post": {
                 "summary": "Send chat to user",
@@ -844,39 +741,78 @@
                 }
             }
         },
-        "CallBlindTransfer": {
-            "type": "object",
+        "Error": {
+            "title": "Error",
+            "description": "Error message for the client",
             "properties": {
-                "destination": {
-                    "description": "Callee parameters",
-                    "type": "object",
-                    "properties": {
-                        "user": {
-                            "type": "string"
-                        }
-                    }
+                "message": {
+                    "description": "Human readable explanation of the error",
+                    "type": "string"
+                },
+                "error_id": {
+                    "description": "Identifier of the type of error. It is more precise than the HTTP status code.",
+                    "type": "string"
+                },
+                "details": {
+                    "description": "Additional information about the error. The keys are specific to each error.",
+                    "type": "object"
+                },
+                "timestamp": {
+                    "description": "Time when the error occured",
+                    "type": "number",
+                    "format": "timestamp"
                 }
             }
         },
-        "CallAMITransfer": {
+        "TransferRequest": {
             "type": "object",
             "properties": {
-                "destination": {
-                    "description": "Callee parameters",
-                    "type": "object",
-                    "properties": {
-                        "dialplan": {
-                            "type": "object",
-                            "properties": {
-                                "exten": {
-                                    "type": "string"
-                                },
-                                "context": {
-                                    "type": "string"
-                                }
-                            }
-                        }
-                    }
+                "transferred_call": {
+                    "description": "Call ID of the call being transferred to someone else",
+                    "type": "string"
+                },
+                "initiator_call": {
+                    "description": "Call ID of the transfer initiator",
+                    "type": "string"
+                },
+                "context": {
+                    "description": "Context of the recipient of the transfer",
+                    "type": "string"
+                },
+                "exten": {
+                    "description": "Extension of the recipient of the transfer",
+                    "type": "string"
+                }
+            }
+        },
+        "Transfer": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "description": "Unique identifier of the transfer",
+                    "type": "string"
+                },
+                "transferred_call": {
+                    "description": "Call ID of the call being transferred to someone else",
+                    "type": "string"
+                },
+                "initiator_call": {
+                    "description": "Call ID of the transfer initiator",
+                    "type": "string"
+                },
+                "recipient_call": {
+                    "description": "Call ID of the recipient of the transfer. May be null when the transfer is 'starting'.",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "The current step of the transfer",
+                    "type": "string",
+                    "enum": [
+                        "starting",
+                        "ringback",
+                        "answered"
+                    ]
+
                 }
             }
         },
@@ -922,29 +858,15 @@
                     "type": "string"
                 }
             }
-        },
-        "Error": {
-            "title": "Error",
-            "description": "Error message for the client",
-            "properties": {
-                "message": {
-                    "description": "Human readable explanation of the error",
-                    "type": "string"
-                },
-                "error_id": {
-                    "description": "Identifier of the type of error. It is more precise than the HTTP status code.",
-                    "type": "string"
-                },
-                "details": {
-                    "description": "Additional information about the error. The keys are specific to each error.",
-                    "type": "object"
-                },
-                "timestamp": {
-                    "description": "Time when the error occured",
-                    "type": "number",
-                    "format": "timestamp"
-                }
-            }
+        }
+    },
+    "parameters": {
+        "TransferID": {
+            "name": "transfer_id",
+            "in": "path",
+            "description": "Unique identifier of the transfer",
+            "required": true,
+            "type": "string"
         }
     }
 }

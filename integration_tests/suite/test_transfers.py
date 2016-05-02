@@ -7,6 +7,8 @@ import ari
 import json
 import logging
 
+from ari.exceptions import ARINotFound
+
 from hamcrest import all_of
 from hamcrest import anything
 from hamcrest import assert_that
@@ -19,7 +21,6 @@ from hamcrest import has_item
 from hamcrest import has_key
 from hamcrest import instance_of
 from hamcrest import not_
-from requests.exceptions import HTTPError
 
 from xivo_test_helpers import until
 
@@ -80,16 +81,16 @@ class TestTransfers(IntegrationTest):
         for channel in self.ari.channels.list():
             try:
                 channel.hangup()
-            except HTTPError:
+            except ARINotFound:
                 pass
 
     def given_bridged_call_stasis(self):
         caller = self.ari.channels.originate(endpoint=ENDPOINT,
                                              app=STASIS_APP,
-                                             variables={'variables': {'XIVO_STASIS_ARGS': STASIS_APP_INSTANCE}})
+                                             appArgs=[STASIS_APP_INSTANCE])
         callee = self.ari.channels.originate(endpoint=ENDPOINT,
                                              app=STASIS_APP,
-                                             variables={'variables': {'XIVO_STASIS_ARGS': STASIS_APP_INSTANCE}})
+                                             appArgs=[STASIS_APP_INSTANCE])
         bridge = self.ari.bridges.create(type='mixing')
 
         def channel_is_up(channel_id):
@@ -167,7 +168,7 @@ class TestTransfers(IntegrationTest):
     def assert_transfer_is_answered(self, transfer_id, transferred_channel_id, initiator_channel_id, recipient_channel_id=None):
         try:
             transfer_bridge = self.ari.bridges.get(bridgeId=transfer_id)
-        except HTTPError:
+        except ARINotFound:
             raise AssertionError('no transfer bridge')
         assert_that(transfer_bridge.json,
                     has_entry('channels',

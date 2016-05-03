@@ -17,6 +17,8 @@
 import logging
 import requests
 
+from ari.exceptions import ARINotFound
+
 from dateutil import tz
 from datetime import datetime
 
@@ -42,8 +44,8 @@ class IncomingRoomCallsService(object):
         bridge_id = ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
         try:
             bridge = ari.bridges.get(bridgeId=bridge_id)
-        except requests.HTTPError:
-            return {'message': 'There is no incoming bridge'}, 200
+        except ARINotFound:
+            return {'message': 'There is no incoming bridge'}, 404
 
         channels = bridge.json.get('channels', None)
 

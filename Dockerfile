@@ -6,6 +6,8 @@ RUN apt-get -qq update \
     && apt-get -qq -y install \
        libpq-dev \
        libyaml-dev \
+       vim \
+    && apt-get -yqq dist-upgrade \
     && apt-get -yqq autoremove
 
 

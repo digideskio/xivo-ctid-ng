@@ -7,6 +7,8 @@ import logging
 from xivo_bus.resources.calls.event import JoinCallIncomingRoomEvent 
 from xivo_bus.resources.calls.event import LeaveCallIncomingRoomEvent
 
+from ari.exceptions import ARINotFound
+
 logger = logging.getLogger(__name__)
 
 
@@ -54,7 +56,7 @@ class IncomingRoomCallsStasis(object):
         if event:
             args = event.get('args')
  
-        if args[0] == 'dialed_from' or args[0] == 'blindtransfer':
+        if args[0] != 'sw1':
             return
 
         channel = event_objects['channel']
@@ -65,16 +67,25 @@ class IncomingRoomCallsStasis(object):
         bridge_id = self.ari.asterisk.getGlobalVar(variable=incoming_room_id).get('value', None)
 
         if bridge_id:
-            bridge = self.ari.bridges.get(bridgeId=bridge_id)
-            if len(bridge.json.get('channels')) < 1:
-                try:
-                    bridge.startMoh()
-                except:
-                    pass
+            try:
+                bridge = self.ari.bridges.get(bridgeId=bridge_id)
+                if len(bridge.json.get('channels')) < 1:
+                    try:
+                        bridge.startMoh()
+                    except:
+                        pass
+            except ARINotFound:
+               bridge = self._create_incoming_bridge(incoming_room_id)
         else:
-            bridge = self.ari.bridges.create(type='holding', name=incoming_room_id)
-            bridge_id = bridge.id
-            self.ari.asterisk.setGlobalVar(variable=incoming_room_id, value=bridge_id)
-            bridge.startMoh()
+               bridge = self._create_incoming_bridge(incoming_room_id)
+
         channel.answer()
         bridge.addChannel(bridgeId=bridge_id, channel=channel.id)
+
+    def _create_incoming_bridge(self, incoming_room_id):
+        bridge = self.ari.bridges.create(type='holding', name=incoming_room_id)
+        bridge_id = bridge.id
+        self.ari.asterisk.setGlobalVar(variable=incoming_room_id, value=bridge_id)
+        bridge.startMoh()
+
+        return bridge

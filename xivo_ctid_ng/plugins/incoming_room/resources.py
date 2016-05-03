@@ -31,7 +31,7 @@ class IncomingRoomCallsResource(AuthResource):
     def get(self, incoming_room_id):
         items = self.calls_service.list_calls(incoming_room_id)
 
-        return items, 201
+        return items
 
 class IncomingRoomCallsAssociationResource(AuthResource):
 

@@ -5,13 +5,13 @@
 from xivo_ctid_ng.core.exceptions import APIException
 
 
-class XiVOAmidUnreachable(APIException):
+class XiVOAmidError(APIException):
 
     def __init__(self, xivo_amid_client, error):
-        super(XiVOAmidUnreachable, self).__init__(
+        super(XiVOAmidError, self).__init__(
             status_code=503,
-            message='xivo-amid server unreachable',
-            error_id='xivo-amid-unreachable',
+            message='xivo-amid request error',
+            error_id='xivo-amid-error',
             details={
                 'xivo_amid_config': {'host': xivo_amid_client.host,
                                      'port': xivo_amid_client.port,
@@ -91,5 +91,19 @@ class NoSuchTransfer(TransferException):
             error_id='no-such-transfer',
             details={
                 'transfer_id': transfer_id,
+            }
+        )
+
+
+class InvalidExtension(TransferException):
+
+    def __init__(self, context, exten):
+        super(InvalidExtension, self).__init__(
+            status_code=400,
+            message='Invalid extension',
+            error_id='invalid-extension',
+            details={
+                'context': context,
+                'exten': exten,
             }
         )

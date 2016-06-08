@@ -34,3 +34,11 @@ class PresenceResource(AuthResource):
         self.presence_service.send(request_body)
 
         return '', 204
+
+class PresenceUserResource(AuthResource):
+
+    def __init__(self, presence_service):
+        self.presence_service = presence_service
+
+    def get(self, uuid):
+        return self.presence_service.get(uuid), 200

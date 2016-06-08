@@ -603,6 +603,47 @@
                 }
             }
         },
+        "/presence/{uuid}": {
+            "get": {
+                "summary": "Get presence for a user",
+                "description": "Get presence for a user",
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "description": "UUID of user",
+                        "required": true,
+                        "type": "string"
+                    }
+                ],
+                "tags": [
+                    "presence"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The presence of a user",
+                        "schema": {
+                            "type": "object",
+                            "items": {
+                                "$ref": "#/definitions/PresenceRequest"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No such presence",
+                        "schema": {
+                            "type": "object",
+                            "items": {
+                                "$ref": "#/definitions/Error"
+                            }
+                        }
+                    },
+                    "503": {
+                        "$ref": "#/responses/AnotherServiceUnavailable"
+                    }
+                }
+            }
+        },
         "/presence/": {
             "put": {
                 "summary": "Update CTI presence",

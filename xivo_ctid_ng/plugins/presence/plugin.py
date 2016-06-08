@@ -17,6 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 from .resources import PresenceResource
+from .resources import PresenceUserResource
 from .services import PresenceService
 
 
@@ -30,3 +31,4 @@ class Plugin(object):
         presence_service = PresenceService(bus, config)
 
         api.add_resource(PresenceResource, '/presence/', resource_class_args=[presence_service])
+        api.add_resource(PresenceUserResource, '/presence/<uuid>', resource_class_args=[presence_service])

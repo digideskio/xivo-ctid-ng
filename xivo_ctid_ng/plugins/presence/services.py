@@ -19,6 +19,8 @@ import logging
 from xivo_ctid_ng.core.rest_api import AuthResource
 from xivo_bus.resources.cti.event import UserStatusUpdateEvent
 
+from xivo_ctid_client import Client
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,6 +29,13 @@ class PresenceService(AuthResource):
     def __init__(self, bus, config):
         self.bus = bus
         self.config = config
+
+    def get(self, uuid):
+        ctid = Client(host=self.config['ctid']['host'], port=self.config['ctid']['port'])
+        try:
+            return ctid.users.get(uuid)
+        except:
+            pass
 
     def send(self, request):
         user_id = request.get('user_id')

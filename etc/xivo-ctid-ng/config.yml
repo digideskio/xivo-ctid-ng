@@ -95,5 +95,4 @@ enabled_plugins:
   - transfers
   - waiting_room
   - incoming_room
-  - chat
   - presence

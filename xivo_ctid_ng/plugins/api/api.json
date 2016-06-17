@@ -612,34 +612,6 @@
                 }
             }
         },
-        "/chat/": {
-            "post": {
-                "summary": "Send chat to user",
-                "description": "Send chat to user",
-                "parameters": [
-                    {
-                        "name": "body",
-                        "in": "body",
-                        "description": "Chat parameters",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/ChatRequest"
-                        }
-                    }
-                ],
-                "tags": [
-                    "chat"
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Message chat has been sent"
-                    },
-                    "503": {
-                        "$ref": "#/responses/AnotherServiceUnavailable"
-                    }
-                }
-            }
-        },
         "/presence/{uuid}": {
             "get": {
                 "summary": "Get presence for a user",
@@ -912,27 +884,6 @@
             "properties": {
                 "moh": {
                     "description": "Music on hold",
-                    "type": "string"
-                }
-            }
-        },
-        "ChatRequest": {
-            "type": "object",
-            "properties": {
-                "from": {
-                    "description": "From parameters",
-                    "type": "string"
-                },
-                "to": {
-                    "description": "To parameters",
-                    "type": "string"
-                },
-                "msg": {
-                    "description": "Message parameters",
-                    "type": "string"
-                },
-                "alias": {
-                    "description": "Alias parameters",
                     "type": "string"
                 }
             }

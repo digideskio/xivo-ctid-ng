@@ -92,6 +92,7 @@ ctid:
 enabled_plugins:
   - api
   - calls
+  - chats
   - transfers
   - waiting_room
   - incoming_room

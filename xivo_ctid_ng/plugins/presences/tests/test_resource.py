@@ -21,7 +21,7 @@ class TestUserPresenceRequestSchema(unittest.TestCase):
 
     def setUp(self):
         self.data = {
-            'name': 'available'
+            'status_name': 'available'
         }
 
     def test_valid(self):

@@ -11,7 +11,7 @@ from xivo_bus.resources.cti.event import UserStatusUpdateEvent
 from xivo_ctid_ng.plugins.presences.services import PresencesService
 
 
-class TestChatsService(unittest.TestCase):
+class TestPresencesService(unittest.TestCase):
 
     def setUp(self):
         self.bus_publisher = Mock()

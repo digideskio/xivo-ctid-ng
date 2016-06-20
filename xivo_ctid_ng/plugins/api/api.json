@@ -676,7 +676,7 @@
                 }
             }
         },
-        "/presences/": {
+        "/presences": {
             "put": {
                 "summary": "Update user presence",
                 "description": "**Required ACL:** `ctid-ng.presences.update`\n\nUpdate presence for a user.\n",

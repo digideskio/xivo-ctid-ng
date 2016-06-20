@@ -28,10 +28,10 @@ class TestUserPresenceRequestSchema(unittest.TestCase):
         result = self.schema.load(self.data).data
 
         assert_that(result['user_id'], equal_to(1))
-        assert_that(result['name'], equal_to('available'))
+        assert_that(result['status_name'], equal_to('available'))
 
-    def test_invalid_name(self):
-        self.data['name'] = None
+    def test_invalid_status_name(self):
+        self.data['status_name'] = None
 
         assert_that(calling(self.schema.load).with_args(self.data), raises(ValidationError))
 
@@ -43,17 +43,17 @@ class TestPresenceRequestSchema(unittest.TestCase):
     def setUp(self):
         self.data = {
             'user_id': 1,
-            'name': 'available'
+            'status_name': 'available'
         }
 
     def test_valid(self):
         result = self.schema.load(self.data).data
 
         assert_that(result['user_id'], equal_to(1))
-        assert_that(result['name'], equal_to('available'))
+        assert_that(result['status_name'], equal_to('available'))
 
-    def test_invalid_name(self):
-        self.data['name'] = None
+    def test_invalid_status_name(self):
+        self.data['status_name'] = None
 
         assert_that(calling(self.schema.load).with_args(self.data), raises(ValidationError))
 

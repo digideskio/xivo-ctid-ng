@@ -16,18 +16,18 @@ class TestChatsService(unittest.TestCase):
     def setUp(self):
         self.bus_publisher = Mock()
         self.xivo_uuid = 'xivo-uuid'
-        self.service = PresencesService(self.bus_publisher, self.xivo_uuid)
+        self.service = PresencesService(self.bus_publisher)
         self.user_id = 1
-        self.name = 'available'
+        self.status_name = 'available'
         self.request_body = {
             'user_id': self.user_id,
-            'name': self.name,
+            'status_name': self.status_name,
         }
 
     def test_update_presence(self):
         self.service.update_presence(self.request_body)
 
-        expected_event = UserStatusUpdateEvent(self.user_id, self.name)
+        expected_event = UserStatusUpdateEvent(self.user_id, self.status_name)
         self.bus_publisher.publish.assert_called_once_with(expected_event)
 
     def test_update_presence_without_user_id(self):
@@ -35,13 +35,13 @@ class TestChatsService(unittest.TestCase):
 
         self.service.update_presence(self.request_body)
 
-        expected_event = UserStatusUpdateEvent(self.user_id, self.name)
+        expected_event = UserStatusUpdateEvent(self.user_id, self.status_name)
         self.bus_publisher.publish.assert_called_once_with(expected_event)
 
-    def test_send_message_with_user_uuid(self):
+    def test_send_message_with_user_id(self):
         user_id = 1
 
         self.service.update_presence(self.request_body, user_id)
 
-        expected_event = UserStatusUpdateEvent(self.user_id, self.name)
+        expected_event = UserStatusUpdateEvent(self.user_id, self.status_name)
         self.bus_publisher.publish.assert_called_once_with(expected_event)

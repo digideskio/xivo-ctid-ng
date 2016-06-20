@@ -17,7 +17,7 @@ class UserPresenceRequestSchema(Schema):
 
 class PresenceRequestSchema(UserPresenceRequestSchema):
 
-    user_id = fields.Int(required=True)
+    user_uuid = fields.UUID(required=True)
 
 user_presence_request_schema = UserPresenceRequestSchema(strict=True)
 presence_request_schema = PresenceRequestSchema(strict=True)
@@ -47,7 +47,7 @@ class UserPresencesResource(AuthResource):
     def put(self):
         request_body = user_presence_request_schema.load(request.get_json(force=True)).data
 
-        user_id = get_token_user_uuid_from_request(self._auth_client)
-        self._presences_service.update_presence(request_body, user_id)
+        user_uuid = get_token_user_uuid_from_request(self._auth_client)
+        self._presences_service.update_presence(request_body, user_uuid)
 
         return '', 204

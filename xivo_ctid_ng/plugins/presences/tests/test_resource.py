@@ -20,6 +20,7 @@ class TestUserPresenceRequestSchema(unittest.TestCase):
     schema = user_presence_request_schema
 
     def setUp(self):
+        self.user_uuid = 'efd089b0-b803-4536-b8f0-91bab5b94604'
         self.data = {
             'status_name': 'available'
         }
@@ -27,7 +28,7 @@ class TestUserPresenceRequestSchema(unittest.TestCase):
     def test_valid(self):
         result = self.schema.load(self.data).data
 
-        assert_that(result['user_id'], equal_to(1))
+        assert_that(result['user_uuid'], equal_to(uuid.UUID(self.user_uuid)))
         assert_that(result['status_name'], equal_to('available'))
 
     def test_invalid_status_name(self):
@@ -41,15 +42,16 @@ class TestPresenceRequestSchema(unittest.TestCase):
     schema = presence_request_schema
 
     def setUp(self):
+        self.user_uuid = 'efd089b0-b803-4536-b8f0-91bab5b94604'
         self.data = {
-            'user_id': 1,
+            'user_uuid': self.user_uuid,
             'status_name': 'available'
         }
 
     def test_valid(self):
         result = self.schema.load(self.data).data
 
-        assert_that(result['user_id'], equal_to(1))
+        assert_that(result['user_uuid'], equal_to(uuid.UUID(self.user_uuid)))
         assert_that(result['status_name'], equal_to('available'))
 
     def test_invalid_status_name(self):
@@ -58,6 +60,6 @@ class TestPresenceRequestSchema(unittest.TestCase):
         assert_that(calling(self.schema.load).with_args(self.data), raises(ValidationError))
 
     def test_invalid_user_id(self):
-        self.data['user_id'] = '1'
+        self.data['user_uuid'] = 'not-an-uuid'
 
         assert_that(calling(self.schema.load).with_args(self.data), raises(ValidationError))

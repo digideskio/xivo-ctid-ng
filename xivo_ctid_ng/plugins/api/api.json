@@ -991,9 +991,9 @@
         "PresenceRequest": {
             "type": "object",
             "properties": {
-                "user_id": {
-                    "description": "User ID",
-                    "type": "integer"
+                "user_uuid": {
+                    "description": "User UUID",
+                    "type": "string"
                 },
                 "status_name": {
                     "description": "Presence status name (ex. available)",

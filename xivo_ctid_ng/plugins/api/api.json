@@ -676,19 +676,22 @@
                 }
             }
         },
-        "/presences": {
+        "/users/{user_uuid}/presences/{name}": {
             "put": {
                 "summary": "Update user presence",
                 "description": "**Required ACL:** `ctid-ng.presences.update`\n\nUpdate presence for a user.\n",
                 "parameters": [
                     {
-                        "name": "body",
-                        "in": "body",
-                        "description": "Presence parameters",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/PresenceRequest"
-                        }
+                        "name": "user_uuid",
+                        "in": "path",
+                        "description": "User UUID",
+                        "required": true
+                    },
+                    {
+                        "name": "name",
+                        "in": "path",
+                        "description": "Presence name",
+                        "required": true
                     }
                 ],
                 "tags": [
@@ -704,19 +707,16 @@
                 }
             }
         },
-        "/users/me/presences": {
+        "/users/me/presences/{name}": {
             "put": {
                 "summary": "Update user presence",
                 "description": "**Required ACL:** `ctid-ng.presences.update`\n\nUpdate presence for a user.\n",
                 "parameters": [
                     {
-                        "name": "body",
-                        "in": "body",
-                        "description": "Presence parameters",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/UserPresenceRequest"
-                        }
+                        "name": "name",
+                        "in": "path",
+                        "description": "Presence name",
+                        "required": true
                     }
                 ],
                 "tags": [
@@ -988,28 +988,6 @@
             "properties": {
                 "moh": {
                     "description": "Music on hold",
-                    "type": "string"
-                }
-            }
-        },
-        "PresenceRequest": {
-            "type": "object",
-            "properties": {
-                "user_uuid": {
-                    "description": "User UUID",
-                    "type": "string"
-                },
-                "status_name": {
-                    "description": "Presence status name (ex. available)",
-                    "type": "string"
-                }
-            }
-        },
-        "UserPresenceRequest": {
-            "type": "object",
-            "properties": {
-                "status_name": {
-                    "description": "Presence status name (ex. available)",
                     "type": "string"
                 }
             }

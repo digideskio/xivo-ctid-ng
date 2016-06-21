@@ -29,10 +29,8 @@ class PresencesResource(AuthResource):
         self._presences_service = presences_service
 
     @required_acl('ctid-ng.presences.update')
-    def put(self):
-        request_body = presence_request_schema.load(request.get_json(force=True)).data
-
-        self._presences_service.update_presence(request_body)
+    def put(self, user_uuid, name):
+        self._presences_service.update_presence(user_uuid, name)
 
         return '', 204
 
@@ -44,10 +42,8 @@ class UserPresencesResource(AuthResource):
         self._presences_service = presences_service
 
     @required_acl('ctid-ng.users.me.presences.update')
-    def put(self):
-        request_body = user_presence_request_schema.load(request.get_json(force=True)).data
-
+    def put(self, name):
         user_uuid = get_token_user_uuid_from_request(self._auth_client)
-        self._presences_service.update_presence(request_body, user_uuid)
+        self._presences_service.update_presence(user_uuid, name)
 
         return '', 204

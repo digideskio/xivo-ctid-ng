@@ -10,6 +10,6 @@ class PresencesService(object):
     def __init__(self, bus_publisher):
         self._bus_publisher = bus_publisher
 
-    def update_presence(self, user_uuid, name):
-        bus_event = UserStatusUpdateEvent(user_uuid, name)
+    def update_presence(self, user_uuid, request_body):
+        bus_event = UserStatusUpdateEvent(user_uuid, request_body['status_name'])
         self._bus_publisher.publish(bus_event)

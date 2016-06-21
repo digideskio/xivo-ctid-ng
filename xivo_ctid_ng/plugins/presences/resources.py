@@ -10,16 +10,10 @@ from xivo_ctid_ng.core.auth import get_token_user_uuid_from_request
 from xivo_ctid_ng.core.rest_api import AuthResource
 
 
-class UserPresenceRequestSchema(Schema):
+class PresenceRequestSchema(Schema):
 
     status_name = fields.Str(required=True)
 
-
-class PresenceRequestSchema(UserPresenceRequestSchema):
-
-    user_uuid = fields.UUID(required=True)
-
-user_presence_request_schema = UserPresenceRequestSchema(strict=True)
 presence_request_schema = PresenceRequestSchema(strict=True)
 
 
@@ -29,8 +23,10 @@ class PresencesResource(AuthResource):
         self._presences_service = presences_service
 
     @required_acl('ctid-ng.presences.update')
-    def put(self, user_uuid, name):
-        self._presences_service.update_presence(user_uuid, name)
+    def put(self, user_uuid):
+        request_body = presence_request_schema.load(request.get_json(force=True)).data
+
+        self._presences_service.update_presence(user_uuid, request_body)
 
         return '', 204
 
@@ -42,8 +38,10 @@ class UserPresencesResource(AuthResource):
         self._presences_service = presences_service
 
     @required_acl('ctid-ng.users.me.presences.update')
-    def put(self, name):
+    def put(self):
+        request_body = presence_request_schema.load(request.get_json(force=True)).data
+
         user_uuid = get_token_user_uuid_from_request(self._auth_client)
-        self._presences_service.update_presence(user_uuid, name)
+        self._presences_service.update_presence(user_uuid, request_body)
 
         return '', 204

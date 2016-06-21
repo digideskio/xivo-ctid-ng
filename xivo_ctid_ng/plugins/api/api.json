@@ -676,7 +676,7 @@
                 }
             }
         },
-        "/users/{user_uuid}/presences/{name}": {
+        "/users/{user_uuid}/presences": {
             "put": {
                 "summary": "Update user presence",
                 "description": "**Required ACL:** `ctid-ng.presences.update`\n\nUpdate presence for a user.\n",
@@ -685,17 +685,22 @@
                         "name": "user_uuid",
                         "in": "path",
                         "description": "User UUID",
-                        "required": true
+                        "required": true,
+                        "type": "string"
                     },
                     {
-                        "name": "name",
-                        "in": "path",
-                        "description": "Presence name",
-                        "required": true
+                        "name": "body",
+                        "in": "body",
+                        "description": "Presence parameters",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PresenceRequest"
+                        }
                     }
                 ],
                 "tags": [
-                    "presences"
+                    "presences",
+                    "users"
                 ],
                 "responses": {
                     "204": {
@@ -707,16 +712,19 @@
                 }
             }
         },
-        "/users/me/presences/{name}": {
+        "/users/me/presences": {
             "put": {
                 "summary": "Update user presence",
                 "description": "**Required ACL:** `ctid-ng.presences.update`\n\nUpdate presence for a user.\n",
                 "parameters": [
                     {
-                        "name": "name",
-                        "in": "path",
-                        "description": "Presence name",
-                        "required": true
+                        "name": "body",
+                        "in": "body",
+                        "description": "Presence parameters",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PresenceRequest"
+                        }
                     }
                 ],
                 "tags": [
@@ -900,6 +908,15 @@
                     "description": "Time when the error occured",
                     "type": "number",
                     "format": "timestamp"
+                }
+            }
+        },
+        "PresenceRequest": {
+            "type": "object",
+            "properties": {
+                "status_name": {
+                    "description": "Presence status name (ex. available)",
+                    "type": "string"
                 }
             }
         },

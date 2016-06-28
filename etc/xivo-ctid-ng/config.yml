@@ -93,6 +93,7 @@ enabled_plugins:
   - api
   - calls
   - chats
+  - presences
   - transfers
   - waiting_room
   - incoming_room
